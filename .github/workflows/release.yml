@@ -35,7 +35,16 @@ jobs:
 
       - name: Build Release APK
         working-directory: android
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Show release APKs
+        run: |
+          ls -la android/app/build/outputs/apk/release
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs android/app/build/outputs/apk/release/*.apk || true
 
       - name: List APK outputs
         run: find android/app/build/outputs/apk/release -type f -name "*.apk" -print      
