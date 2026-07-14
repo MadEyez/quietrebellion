@@ -21,7 +21,7 @@ and without root.
 - Listening mode selection (Quiet / Aware / Immersion / Cinema + custom slots)
 - Device rename
 - **Foreground service** – connection stays alive when you leave the app
-- **Home screen widget** – battery, mode, ANC toggle, Next Mode button
+
 
 ## Requirements
 
@@ -96,8 +96,7 @@ MainActivity ──► BoseService (ForegroundService)
 - **`QcUltra2`** – feature addresses, parsers, builders for the wolverine device
 - **`BoseConnection`** – typed high-level API (port of `connection.py` / `BoseConnection.cs`)
 - **`BluetoothTransport`** – RFCOMM socket with drain mode for multi-packet responses
-- **`BoseService`** – keeps connection alive in background, drives notification + widget
-- **`SoundCtlWidget`** – 4×1 home screen widget, reuses `BoseService` broadcast actions
+- **`BoseService`** – keeps connection alive in background, drives persistent notification
 
 ## Permissions
 

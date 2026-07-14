@@ -1,0 +1,2 @@
+Initial release. Supports QC Ultra Headphones 2 and QuietComfort 35/35 II.
+

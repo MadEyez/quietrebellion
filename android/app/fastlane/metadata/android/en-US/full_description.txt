@@ -1,0 +1,25 @@
+Quiet Rebellion lets you control your Bose QC Ultra Headphones (2nd Gen) directly over Bluetooth RFCOMM — without the Bose app, without a cloud account, and without sending any data off your device.
+
+It implements the BMAP protocol (Bose Messaging and Protocol), the same protocol the official app uses, but accessed through the unauthenticated SETGET operator. No keys are extracted, no encryption is broken, no traffic is replayed.
+
+**Supported device**
+- Bose QuietComfort Ultra Headphones (2nd Gen), codename "wolverine"
+
+**Features**
+- Noise cancellation level (CNC 0–10) + Auto-CNC toggle
+- Spatial audio (Off / Room / Head)
+- Wind Block
+- 3-band EQ (Bass / Mid / Treble)
+- Sidetone
+- Listening mode (Quiet / Aware / Immersion / Cinema + custom slots)
+- Multipoint connection + device switching
+- Device rename
+- Foreground service — connection stays alive when you leave the app
+
+**Requirements**
+- Android 8.0+ (API 26)
+- Bose QC Ultra Headphones (2nd Gen) already paired via Android Bluetooth settings
+- The Bose app must not be running (it holds the RFCOMM channel)
+
+Source code: https://github.com/aaronsb/bosectl
+
