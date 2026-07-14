@@ -59,3 +59,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: quietrebellion-${{ github.ref_name }}.apk
+
+      - name: Print F-Droid metadata values
+        run: |
+          echo "Commit: $GITHUB_SHA"
+          echo "Tag: $GITHUB_REF_NAME"
+          echo "APK: https://github.com/MadEyez/quietrebellion/releases/download/$GITHUB_REF_NAME/quietrebellion-${GITHUB_REF_NAME#v}.apk"
