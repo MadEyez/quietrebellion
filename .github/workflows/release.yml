@@ -37,6 +37,11 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon :app:assembleRelease
 
+      - name: Show release APKs
+        run: |
+          ls -la android/app/build/outputs/apk/release
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs android/app/build/outputs/apk/release/*.apk || true
+
       - name: List APK outputs
         run: find android/app/build/outputs/apk/release -type f -name "*.apk" -print      
 
