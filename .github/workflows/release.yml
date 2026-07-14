@@ -37,8 +37,14 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon :app:assembleRelease
 
+      - name: List APK outputs
+        run: find android/app/build/outputs/apk/release -type f -name "*.apk" -print      
+
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/release/app-release.apk quietrebellion-${{ github.ref_name }}.apk
+        run: |
+          APK="$(find android/app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)"
+          echo "Found APK: $APK"
+          mv "$APK" quietrebellion-${{ github.ref_name }}.apk
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
