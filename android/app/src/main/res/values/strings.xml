@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Quiet Rebellion</string>
+    <string name="notif_channel_name">Quiet Rebellion</string>
+    <string name="notif_title_disconnected">Not connected</string>
+</resources>

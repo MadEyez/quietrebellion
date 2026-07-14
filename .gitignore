@@ -7,3 +7,11 @@ build/
 .venv/
 .pytest_cache/
 target/
+
+# .NET build artifacts
+csharp/**/bin/
+csharp/**/obj/
+
+# JetBrains IDE
+.idea/
+

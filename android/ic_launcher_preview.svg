@@ -1,0 +1,25 @@
+<!-- Light Rebellion – Icon-Vorschau
+     Hintergrund: #F4F4F5  Zinc-50
+     Kurve:       #71717A  Zinc-500
+     Peak:        #7C3AED  Violet-700 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-labelledby="title desc">
+  <title id="title">Light Rebellion app icon</title>
+  <desc id="desc">Equalizer-Kurve auf hellem Hintergrund, violetter Peak-Segment als Rebellion-Moment.</desc>
+
+  <rect width="108" height="108" fill="#F4F4F5"/>
+
+  <path
+    d="M15 59 C20 59 22 51 27 51 C33 51 33.5 66 40 66 C43.5 66 44.5 60 46 54"
+    fill="none" stroke="#71717A" stroke-width="6"
+    stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path
+    d="M46 54 C48 45 48.5 29 55 29 C62.5 29 60 80 68 80"
+    fill="none" stroke="#7C3AED" stroke-width="6.4"
+    stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path
+    d="M68 80 C75 80 73.5 47 81 47 C87.5 47 88.5 59 93 59"
+    fill="none" stroke="#71717A" stroke-width="6"
+    stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

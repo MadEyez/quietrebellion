@@ -1,0 +1,36 @@
+<!-- Light Rebellion – Notification-Icon (24×24)
+     Gleiche Equalizer-Form, skaliert ÷4.5. Einfarbig dunkel (Light Status Bar). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Links -->
+    <path
+        android:pathData="M3.3 13.1 C4.4 13.1 4.9 11.3 6 11.3 C7.3 11.3 7.4 14.7 8.9 14.7 C9.7 14.7 9.9 13.3 10.2 12"
+        android:strokeColor="#18181B"
+        android:strokeWidth="1.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Peak (Violet auf weiß/hell zu dunkel für Monochrom — bleibt dunkel) -->
+    <path
+        android:pathData="M10.2 12 C10.7 10 10.8 6.4 12.2 6.4 C13.9 6.4 13.3 17.8 15.1 17.8"
+        android:strokeColor="#18181B"
+        android:strokeWidth="1.7"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Rechts -->
+    <path
+        android:pathData="M15.1 17.8 C16.7 17.8 16.3 10.4 18 10.4 C19.4 10.4 19.7 13.1 20.7 13.1"
+        android:strokeColor="#18181B"
+        android:strokeWidth="1.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+</vector>

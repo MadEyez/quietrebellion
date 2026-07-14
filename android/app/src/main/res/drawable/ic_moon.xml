@@ -1,0 +1,15 @@
+<!-- Moon crescent – shown in light mode (click → go dark) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24"
+    android:tint="?attr/colorOnSurface">
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,3 C7.03,3 3,7.03 3,12 C3,16.97 7.03,21 12,21
+            C14.03,21 15.88,20.31 17.38,19.15
+            C15.6,18.71 14,17.64 12.82,16.18
+            C11,13.93 11,10.07 12.82,7.82
+            C14,6.36 15.6,5.29 17.38,4.85
+            C15.88,3.69 14.03,3 12,3 Z" />
+</vector>
+

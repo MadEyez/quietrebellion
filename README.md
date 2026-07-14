@@ -1,14 +1,24 @@
 # bosectl
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/aaronsb/bosectl)](https://github.com/aaronsb/bosectl/releases/latest)
+[![Upstream](https://img.shields.io/badge/upstream-aaronsb%2Fbosectl-blue)](https://github.com/aaronsb/bosectl)
 [![Devices](https://img.shields.io/badge/Devices-2_supported_·_14_known-green)](docs/architecture.md#device-catalog)
 [![Python 3](https://img.shields.io/badge/Python-3-3572A5.svg)](python/)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-DEA584.svg)](rust/)
 [![C++17](https://img.shields.io/badge/C++-17-f34b7d.svg)](cpp/)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg)](android/)
+[![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4.svg)](csharp/)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://kernel.org)
 
-**Control Bose headphones from Linux — no app, no cloud, no account.**
+**Control Bose headphones from Linux, Android, or Windows — no app, no cloud, no account.**
+
+> **Fork of [aaronsb/bosectl](https://github.com/aaronsb/bosectl).**  
+> This fork adds a native **Windows tray app and CLI** (`csharp/`) and an
+> **Android app** (`android/`) on top of the original Linux Python/Rust/C++ libraries.  
+> All upstream protocol work, device catalog, and library code is unchanged.
+>
+> ⚠️ **Windows and Android ports are pre-alpha.** Core features work, but expect
+> rough edges. For stable, well-tested control use the Python or Rust CLI on Linux.
 
 ![bosectl CLI](docs/media/screenshot.png)
 
@@ -51,7 +61,38 @@ See [Adding a New Device](docs/architecture.md#adding-a-new-device).
 
 ## Quick Start
 
-### Library Usage
+### Windows (this fork)
+
+System tray app — launch and forget:
+
+```powershell
+cd csharp\BoseCtl
+dotnet run          # tray mode (no args), auto-detects paired headphones
+```
+
+Or CLI mode:
+
+```powershell
+dotnet run -- --set-mode quiet    # full ANC
+dotnet run -- --set-cnc 5         # noise cancellation level 0-10
+dotnet run -- --help
+```
+
+See **[csharp/README.md](csharp/README.md)** for build, publish, and tray-app docs.
+
+### Android (this fork)
+
+Build and install via Android Studio or:
+
+```bash
+cd android
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+See **[android/README.md](android/README.md)** for details.
+
+### Linux / Library Usage
 
 ```python
 import pybmap
@@ -118,13 +159,26 @@ pybmap.known_devices()       # full catalog
 
 ## Installation
 
-### Prerequisites
+### Windows
+
+```powershell
+cd csharp\BoseCtl
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+# → bin\Release\...\win-x64\publish\bosectl.exe  (no .NET runtime needed)
+```
+
+Pair the headphones in Windows Bluetooth settings first. The Bose app must not be
+running (it holds the RFCOMM channel).
+
+### Linux — Prerequisites
 
 - **Linux** with BlueZ (standard Bluetooth stack)
 - **Bluetooth** adapter (built-in or USB)
 - **Bose headphones** paired via `bluetoothctl`
 
-### From Release Binaries
+### From Release Binaries (upstream)
+
+> These binaries are from the upstream project and cover Linux only.
 
 ```bash
 # Download from GitHub releases
@@ -138,7 +192,8 @@ sudo cp bmapctl-rust-linux-x86_64 /usr/local/bin/bmapctl
 ### From Source
 
 ```bash
-git clone https://github.com/aaronsb/bosectl.git
+git clone https://github.com/aaronsb/bosectl.git   # upstream (Linux/Python/Rust/C++)
+# or clone this fork for Windows + Android additions
 cd bosectl
 make test          # Run all tests (Python + Rust + C++)
 make artifacts     # Build release binaries + SHA256SUMS
@@ -205,9 +260,11 @@ Full protocol reference: **[NOTES.md](NOTES.md)**
 ## Project Structure
 
 ```
-├── python/pybmap/       # Python library + bosectl CLI
-├── rust/src/            # Rust library + bmapctl CLI
-├── cpp/src/             # C++ library + bmapctl CLI
+├── python/pybmap/       # Python library + bosectl CLI  (upstream)
+├── rust/src/            # Rust library + bmapctl CLI     (upstream)
+├── cpp/src/             # C++ library + bmapctl CLI      (upstream)
+├── android/             # Android app — QC Ultra 2       (this fork)
+├── csharp/BoseCtl/      # Windows tray app + CLI         (this fork)
 ├── docs/                # Architecture guide, device docs
 ├── NOTES.md             # Protocol reverse engineering notes
 ├── Makefile             # Build, test, release across all languages

@@ -1,0 +1,44 @@
+<!-- Light Rebellion – Launcher-Icon (108×108)
+     Equalizer-Kurve exakt aus der Vorlage übernommen, Farben auf Light Theme angepasst.
+
+     Palette:
+       bg (via ic_launcher_background) #F4F4F5  Zinc-50 (kühles Hellgrau)
+       curve  #71717A  Zinc-500        (gedämpfte Equalizer-Kurve = Bose-Status-quo)
+       peak   #7C3AED  Violet-700      (der Rebellion-Spike = diese App)
+
+     Story: normaler EQ-Verlauf links und rechts (Bose, langweilig) –
+            ein knalliger Violett-Peak in der Mitte (die Rebellion). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- ── Links: gedämpfte Equalizer-Kurve (Bose-Status-quo) ───────────── -->
+    <path
+        android:pathData="M15 59 C20 59 22 51 27 51 C33 51 33.5 66 40 66 C43.5 66 44.5 60 46 54"
+        android:strokeColor="#71717A"
+        android:strokeWidth="6"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- ── Mitte: Violett-Peak (die Rebellion) ───────────────────────────── -->
+    <path
+        android:pathData="M46 54 C48 45 48.5 29 55 29 C62.5 29 60 80 68 80"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="6.4"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- ── Rechts: gedämpfte Equalizer-Kurve (befreiter, aber ruhiger) ──── -->
+    <path
+        android:pathData="M68 80 C75 80 73.5 47 81 47 C87.5 47 88.5 59 93 59"
+        android:strokeColor="#71717A"
+        android:strokeWidth="6"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+</vector>
