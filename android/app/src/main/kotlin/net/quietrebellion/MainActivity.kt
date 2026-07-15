@@ -85,7 +85,10 @@ class MainActivity : AppCompatActivity() {
     private val permLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
-        if (grants.values.all { it }) connect()
+        // POST_NOTIFICATIONS is optional – only BLUETOOTH_CONNECT is required
+        val btGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            grants.getOrDefault(Manifest.permission.BLUETOOTH_CONNECT, true)
+        if (btGranted) startAndBindService()
         else setStatus("Bluetooth permission required")
     }
 
@@ -98,11 +101,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(b.root)
         setSupportActionBar(b.toolbar)
         wireListeners()
-        // Start service; binding happens in onStart (paired with onStop unbind)
-        val svcIntent = Intent(this, QuietRebellionService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            startForegroundService(svcIntent) else startService(svcIntent)
-        requestNotificationPermission()
+        requestRequiredPermissions()
     }
 
     override fun onStop() {
@@ -116,8 +115,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val svcIntent = Intent(this, QuietRebellionService::class.java)
-        bindService(svcIntent, serviceConn, BIND_AUTO_CREATE)
+        // Only bind if service was already started (permission granted); startAndBindService() handles first launch.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            bindService(Intent(this, QuietRebellionService::class.java), serviceConn, BIND_AUTO_CREATE)
+        }
     }
 
     override fun onDestroy() {
@@ -125,14 +127,26 @@ class MainActivity : AppCompatActivity() {
         // Don't close conn – service owns it
     }
 
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 99)
-            }
-        }
+    private fun startAndBindService() {
+        val svcIntent = Intent(this, QuietRebellionService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            startForegroundService(svcIntent) else startService(svcIntent)
+        bindService(svcIntent, serviceConn, BIND_AUTO_CREATE)
     }
+
+    /** Requests all required runtime permissions in one shot via permLauncher. */
+    private fun requestRequiredPermissions() {
+        val needed = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                add(Manifest.permission.POST_NOTIFICATIONS)
+        }.toTypedArray()
+        if (needed.isEmpty()) startAndBindService() else permLauncher.launch(needed)
+    }
+
 
     // ── Theme toggle ──────────────────────────────────────────────────────────
 
