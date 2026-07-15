@@ -54,14 +54,16 @@ jobs:
 
       - name: Rename APK
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
           APK="$(find android/app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)"
-          echo "Found APK: $APK"
-          mv "$APK" quietrebellion-${{ github.ref_name }}.apk
+          mv "$APK" "quietrebellion-${VERSION}.apk"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: quietrebellion-${{ github.ref_name }}.apk
+          files: quietrebellion-${{ env.VERSION }}.apk
 
       - name: Print F-Droid metadata values
         run: |
