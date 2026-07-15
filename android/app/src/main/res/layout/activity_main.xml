@@ -330,14 +330,29 @@
                             android:layout_height="wrap_content" />
                     </LinearLayout>
 
-                    <!-- Paired device list, shown only when multipoint is on -->
+                    <!-- Paired device list, shown only when multipoint is on + active source known -->
                     <TextView
                         android:id="@+id/tvPairedDevicesLabel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Switch Device"
+                        android:text="Switch Audio Source"
                         android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tvActiveDevice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tvPairedDevicesHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="The target device must also be actively connected."
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
                     <RadioGroup
                         android:id="@+id/rgPairedDevices"

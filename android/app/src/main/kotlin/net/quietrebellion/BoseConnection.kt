@@ -148,7 +148,13 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
     suspend fun switchToDevice(mac: String) {
         val (fb, fn) = QcUltra2.Routing
         val pkt = BmapProtocol.build(fb, fn, Op.START, QcUltra2.buildRouting(mac))
-        throwIfError(BmapProtocol.parse(transport.sendRecv(pkt)))
+        val resp = BmapProtocol.parse(transport.sendRecv(pkt)) ?: return
+        // ponytail: FuncNotSupp (4) on [4.12] means the firmware routing table is empty –
+        // the device only registers this function when two BT connections are active simultaneously.
+        // Upgrade path: query connected-device count if a future BMAP version exposes it.
+        if (resp.op == Op.ERROR && resp.payload.getOrNull(0) == 4.toByte())
+            throw BoseProtocolException("Switching requires two active Bluetooth connections (multipoint)")
+        throwIfError(resp)
     }
 
     suspend fun setFavorites(favSet: Set<Int>, totalModes: Int = 11) {

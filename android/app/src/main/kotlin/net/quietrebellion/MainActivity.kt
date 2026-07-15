@@ -352,13 +352,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyPairedDevices() {
-        val show = multipoint && pairedMacs.isNotEmpty()
+        // Only meaningful when multipoint is on, an active source is known,
+        // and there is at least one OTHER paired device to switch to.
+        val others = pairedMacs.filter { !it.equals(activeMac, ignoreCase = true) }
+        val show = multipoint && activeMac != null && others.isNotEmpty()
         b.tvPairedDevicesLabel.visibility = if (show) View.VISIBLE else View.GONE
+        b.tvActiveDevice.visibility       = if (show) View.VISIBLE else View.GONE
+        b.tvPairedDevicesHint.visibility  = if (show) View.VISIBLE else View.GONE
         b.rgPairedDevices.visibility      = if (show) View.VISIBLE else View.GONE
         if (!show) return
 
+        @android.annotation.SuppressLint("MissingPermission")
+        val activeName = activeMac?.let {
+            btAdapter?.getRemoteDevice(it)?.name?.takeIf { n -> n.isNotBlank() } ?: shortenMac(it)
+        } ?: "unknown"
+        b.tvActiveDevice.text = "Now playing: $activeName"
+
         b.rgPairedDevices.removeAllViews()
-        pairedMacs.forEach { mac ->
+        others.forEach { mac ->
             // ponytail: name only available if mac is bonded on this Android device; falls back to shortened MAC
             @android.annotation.SuppressLint("MissingPermission")
             val label = btAdapter?.getRemoteDevice(mac)?.name?.takeIf { it.isNotBlank() } ?: shortenMac(mac)
@@ -366,7 +377,6 @@ class MainActivity : AppCompatActivity() {
                 id   = View.generateViewId()
                 text = label
                 tag  = mac
-                if (mac.equals(activeMac, ignoreCase = true)) isChecked = true
             }
             b.rgPairedDevices.addView(rb)
         }
@@ -478,7 +488,12 @@ class MainActivity : AppCompatActivity() {
         b.rgPairedDevices.setOnCheckedChangeListener { group, checkedId ->
             if (updatingUi) return@setOnCheckedChangeListener
             val mac = group.findViewById<RadioButton>(checkedId)?.tag as? String ?: return@setOnCheckedChangeListener
-            sendCmd { conn!!.switchToDevice(mac); activeMac = mac }
+            sendCmd {
+                conn!!.switchToDevice(mac)
+                // Confirm actual active source from device; fall back to optimistic update
+                activeMac = try { conn!!.source().second ?: mac } catch (_: Exception) { mac }
+                runOnUiThread { applyPairedDevices() }
+            }
         }
     }
 
