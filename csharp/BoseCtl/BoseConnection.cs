@@ -60,7 +60,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var (fb, fn) = QcUltra2.Sidetone;
         var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildSidetone(level));
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var (fb, fn) = QcUltra2.Multipoint;
         var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildToggle(enabled));
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var (fb, fn) = QcUltra2.Eq;
         var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildEqBand(value, bandId));
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var (fb, fn) = QcUltra2.ProductName;
         var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildDeviceName(name));
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     // ── Additional Read Operations ────────────────────────────────────────────
@@ -245,7 +245,7 @@ public sealed class BoseConnection : IAsyncDisposable
         byte[] payload = new byte[] { (byte)index, (byte)(announce ? 1 : 0) };
         var pkt  = BmapProtocol.Build(fb, fn, Op.Start, payload);
         var raw  = await _t.SendRecvAsync(pkt);
-        var resp = BmapProtocol.Parse(raw);
+        var resp = FindResponse(raw, fb, fn);
         ThrowIfError(resp);
         if (_debug && resp is not null)
             Console.WriteLine($"[bose] set_mode_by_index({index}): {resp.Format()}");
@@ -274,6 +274,34 @@ public sealed class BoseConnection : IAsyncDisposable
     }
 
     /// <summary>
+    /// Paired device MACs mapped to their display names from headphone memory.
+    /// For each MAC, queries [4.5] DeviceInfo. Falls back to null (caller uses MAC).
+    /// Port of BoseConnection.kt pairedDevicesWithNames().
+    /// </summary>
+    public async Task<Dictionary<string, string?>> PairedDevicesWithNamesAsync()
+    {
+        var macs   = await GetPairedDeviceMacsAsync();
+        var (fb, fn) = QcUltra2.DeviceInfo;
+        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var mac in macs)
+        {
+            string? name = null;
+            try
+            {
+                byte[] macBytes = mac.Split(':').Select(b => Convert.ToByte(b, 16)).ToArray();
+                var pkt  = BmapProtocol.Build(fb, fn, Op.Get, macBytes);
+                var raw  = await _t.SendRecvAsync(pkt);
+                var resp = FindResponse(raw, fb, fn);
+                if (resp?.Operator == Op.Status)
+                    name = QcUltra2.ParseDeviceInfo(resp.Payload);
+            }
+            catch { }
+            result[mac] = name;
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Route audio to a different paired Bluetooth device.
     /// bmap: START [4.12] payload=[0x82, mac0…mac5]
     /// The target MAC is the BT address of the device to receive audio
@@ -285,7 +313,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var payload = QcUltra2.BuildRouting(mac);
         var pkt = BmapProtocol.Build(fb, fn, Op.Start, payload);
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
         if (_debug) Console.WriteLine($"[bose] switched audio to {mac}");
     }
 
@@ -304,7 +332,7 @@ public sealed class BoseConnection : IAsyncDisposable
         byte[] payload = new byte[] { (byte)idx, (byte)(announce ? 1 : 0) };
         var pkt = BmapProtocol.Build(fb, fn, Op.Start, payload);
         var raw = await _t.SendRecvAsync(pkt);
-        var resp = BmapProtocol.Parse(raw);
+        var resp = FindResponse(raw, fb, fn);
         ThrowIfError(resp);
         if (_debug && resp is not null)
             Console.WriteLine($"[bose] set_mode response: {resp.Format()}");
@@ -383,7 +411,7 @@ public sealed class BoseConnection : IAsyncDisposable
         var (fb, fn) = QcUltra2.Favorites;
         var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildFavorites(totalModes, favSet));
         var raw = await _t.SendRecvAsync(pkt);
-        ThrowIfError(BmapProtocol.Parse(raw));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>
@@ -409,8 +437,8 @@ public sealed class BoseConnection : IAsyncDisposable
     public async Task SetAutoPlayPauseAsync(bool enabled)
     {
         var (fb, fn) = QcUltra2.AutoPlayPause;
-        ThrowIfError(BmapProtocol.Parse(
-            await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }))));
+        var raw = await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>Auto-answer calls.</summary>
@@ -425,8 +453,8 @@ public sealed class BoseConnection : IAsyncDisposable
     public async Task SetAutoAnswerAsync(bool enabled)
     {
         var (fb, fn) = QcUltra2.AutoAnswer;
-        ThrowIfError(BmapProtocol.Parse(
-            await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }))));
+        var raw = await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }));
+        ThrowIfError(FindResponse(raw, fb, fn));
     }
 
     /// <summary>
@@ -458,7 +486,7 @@ public sealed class BoseConnection : IAsyncDisposable
     {
         var pkt  = BmapProtocol.Build(fblock, func, Op.Get);
         var raw  = await _t.SendRecvAsync(pkt);
-        var resp = BmapProtocol.Parse(raw);
+        var resp = FindResponse(raw, fblock, func);
         ThrowIfError(resp);
         if (resp is null)
             throw new InvalidOperationException($"No response for GET [{fblock}.{func}]");
@@ -473,7 +501,7 @@ public sealed class BoseConnection : IAsyncDisposable
         byte[] payload = QcUltra2.BuildAudioSettings(settings);
         var pkt  = BmapProtocol.Build(fb, fn, Op.SetGet, payload);
         var raw  = await _t.SendRecvAsync(pkt);
-        var resp = BmapProtocol.Parse(raw);
+        var resp = FindResponse(raw, fb, fn);
         ThrowIfError(resp);
         if (_debug && resp is not null)
             Console.WriteLine($"[bose] SETGET [{fb}.{fn}]: {resp.Format()}");
@@ -485,6 +513,19 @@ public sealed class BoseConnection : IAsyncDisposable
         byte code = resp.Payload.Length > 0 ? resp.Payload[0] : (byte)0;
         string name = BmapError.Name(code);
         throw new BoseProtocolException($"Device error: {name} ({resp.Format()})");
+    }
+
+    /// <summary>
+    /// Find the response packet matching [fblock.func] among all packets in raw.
+    /// Skips unsolicited notifications (e.g. [2.3] FuncNotSupp) that may precede
+    /// the actual reply. Falls back to the first packet if no match found.
+    /// ponytail: linear scan over typically 1-3 packets; no upgrade needed.
+    /// </summary>
+    private static BmapResponse? FindResponse(byte[] raw, byte fblock, byte func)
+    {
+        var all = BmapProtocol.ParseAll(raw);
+        return all.FirstOrDefault(r => r.FBlock == fblock && r.Func == func)
+               ?? all.FirstOrDefault();
     }
 
     public async ValueTask DisposeAsync() => await _transport.DisposeAsync();

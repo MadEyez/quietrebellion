@@ -60,6 +60,10 @@ public static class QcUltra2
     // bmap: [4.4]  GET → paired device list: [count_or_flags, mac1(6), mac2(6), ...]
     public static readonly (byte fblock, byte func) PairedDevices = (4, 4);
 
+    // bmap: [4.5]  GET(mac_bytes) → STATUS: [mac(6), unk, unk, 0x03, name_utf8...]
+    //              Returns the display name the headphone stored for that device.
+    public static readonly (byte fblock, byte func) DeviceInfo = (4, 5);
+
     // bmap: [4.12] START → route audio to a different device
     //              payload: [0x82, mac0, mac1, mac2, mac3, mac4, mac5]
     //              0x82 = bit7 (UP direction) | bit1 (device slot)
@@ -301,6 +305,24 @@ public static class QcUltra2
             result.Add(string.Join(":", p.Skip(i).Take(6).Select(b => b.ToString("X2"))));
         }
         return result;
+    }
+
+    /// <summary>
+    /// Parse [4.5] STATUS payload: [mac(6), unk, unk, 0x03, name_utf8...]
+    /// Returns the display name stored in headphone memory for that device, or null.
+    /// Port of QcUltra2.kt parseDeviceInfo.
+    /// </summary>
+    public static string? ParseDeviceInfo(byte[] p)
+    {
+        // Find 0x03 marker after the 6-byte MAC prefix; name follows
+        int nameStart = -1;
+        for (int i = 6; i < p.Length; i++) { if (p[i] == 0x03) { nameStart = i; break; } }
+        if (nameStart < 0 || nameStart + 1 >= p.Length) return null;
+        // Strip null bytes and leading/trailing control chars (□ artefacts on Windows fonts)
+        var controlChars = Enumerable.Range(0, 32).Select(i => (char)i).ToArray();
+        string name = System.Text.Encoding.UTF8.GetString(p, nameStart + 1, p.Length - nameStart - 1)
+                          .Trim(controlChars);
+        return string.IsNullOrWhiteSpace(name) ? null : name;
     }
 
     /// <summary>

@@ -74,7 +74,7 @@ public sealed class TrayApp : ApplicationContext
         _tray = new NotifyIcon
         {
             Icon             = BmapIcons.Searching(),
-            Text             = "bosectl — searching…",
+            Text             = "Quiet Rebellion \u2014 searching…",
             Visible          = true,
             ContextMenuStrip = menu,
         };
@@ -104,13 +104,13 @@ public sealed class TrayApp : ApplicationContext
         _busy = true;
         try
         {
-            SetTray(BmapIcons.Searching(), "bosectl — connecting…");
+            SetTray(BmapIcons.Searching(), "Quiet Rebellion \u2014 connecting…");
             if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
 
             _device = await DeviceDiscovery.FindAsync();
             if (_device is null)
             {
-                SetTray(BmapIcons.Disconnected(), "bosectl — device not found");
+                SetTray(BmapIcons.Disconnected(), "Quiet Rebellion \u2014 device not found");
                 return;
             }
 
@@ -134,7 +134,7 @@ public sealed class TrayApp : ApplicationContext
         {
             if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
             SetTray(BmapIcons.Disconnected(),
-                $"bosectl — {ex.Message[..Math.Min(60, ex.Message.Length)]}");
+                $"Quiet Rebellion \u2014 {ex.Message[..Math.Min(60, ex.Message.Length)]}");
         }
         finally { _busy = false; }
     }
@@ -148,7 +148,7 @@ public sealed class TrayApp : ApplicationContext
         catch
         {
             if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
-            SetTray(BmapIcons.Disconnected(), "bosectl — disconnected (retrying…)");
+            SetTray(BmapIcons.Disconnected(), "Quiet Rebellion \u2014 disconnected (retrying…)");
         }
         finally { _busy = false; }
     }
@@ -165,10 +165,24 @@ public sealed class TrayApp : ApplicationContext
         _windBlock  = audio.WindBlock;
         _spatial    = audio.Spatial;
 
-        string chargingIcon = _charging == true ? " ⚡" : "";
-        SetTray(BmapIcons.Connected(_battery),
-            $"bosectl — {_deviceName} | {_battery}%{chargingIcon} | {ModeLabel(_modeIndex)}");
+        // Refresh active source for Now Playing (multipoint only, best-effort)
+        if (_multipoint)
+            try { (_, _activeMac) = await _conn.GetSourceAsync(); } catch { }
+
+        UpdateTray();
         NotifyLowBattery();
+    }
+
+    /// <summary>Update tray icon + tooltip, including Now Playing source name when multipoint is active.</summary>
+    private void UpdateTray()
+    {
+        string chargingIcon = _charging == true ? " ⚡" : "";
+        string? sourceName = _multipoint && _activeMac is not null
+            ? _pairedDevices.FirstOrDefault(d => d.mac.Equals(_activeMac, StringComparison.OrdinalIgnoreCase)).label
+            : null;
+        string text = $"Quiet Rebellion \u2014 {_deviceName} | {_battery}%{chargingIcon} | {ModeLabel(_modeIndex)}";
+        if (sourceName is not null) text += $" | \u25b6 {sourceName}";
+        SetTray(BmapIcons.Connected(_battery), text);
     }
 
     // ── Menu ──────────────────────────────────────────────────────────────────
@@ -189,14 +203,19 @@ public sealed class TrayApp : ApplicationContext
         }
         catch { _activeMac = null; }
 
-        // Paired device list → gives us all MACs the headphone knows
+        // Paired device list with names from headphone memory (port of Android pairedDevicesWithNames)
         try
         {
-            var macs = await _conn.GetPairedDeviceMacsAsync();
+            var devicesWithNames = await _conn.PairedDevicesWithNamesAsync();
             _pairedDevices = new List<(string mac, string label)>();
-            foreach (var mac in macs)
+            foreach (var (mac, bmapName) in devicesWithNames)
             {
-                string label = await ResolveBtNameAsync(mac) ?? ShortenMac(mac);
+                // 1. Name from headphone memory (BMAP [4.5])
+                // 2. "This PC" / Windows BT cache fallback
+                // 3. Shortened MAC
+                string label = bmapName
+                               ?? await ResolveBtNameAsync(mac)
+                               ?? ShortenMac(mac);
                 _pairedDevices.Add((mac, label));
             }
         }
@@ -275,7 +294,8 @@ public sealed class TrayApp : ApplicationContext
         if (_conn is not null)
         {
             // ── Modes ─────────────────────────────────────────────────────────
-            foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key))
+            foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key)
+                                                   .Where(kv => !kv.Value.Equals("none", StringComparison.OrdinalIgnoreCase)))
             {
                 bool cur  = idx == _modeIndex;
                 bool isFav = _favorites.Contains(idx);
@@ -336,11 +356,11 @@ public sealed class TrayApp : ApplicationContext
         // Auto-CNC toggle at top
         bool autoCur = _autoCnc;
         var autoItem = new ToolStripMenuItem((autoCur ? "✓  " : "     ") + "Auto (device-managed)");
-        autoItem.Click += async (_, _) =>
+        autoItem.Click += async (_, _) => await SendCmdAsync(async () =>
         {
             await _conn!.SetAutoCncAsync(!_autoCnc);
             _autoCnc = !_autoCnc;
-        };
+        });
         parent.DropDownItems.Add(autoItem);
         parent.DropDownItems.Add(new ToolStripSeparator());
 
@@ -350,7 +370,12 @@ public sealed class TrayApp : ApplicationContext
             bool cur = !_autoCnc && lvl == _cncLevel;
             var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + lvl + suffix);
             int  cl   = lvl;
-            item.Click += async (_, _) => { await _conn!.SetCncLevelAsync(cl); _cncLevel = cl; _autoCnc = false; };
+            item.Click += async (_, _) => await SendCmdAsync(async () =>
+            {
+                await _conn!.SetCncLevelAsync(cl);
+                _cncLevel = cl;
+                _autoCnc  = false;
+            });
             parent.DropDownItems.Add(item);
         }
         return parent;
@@ -359,19 +384,19 @@ public sealed class TrayApp : ApplicationContext
     private ToolStripMenuItem FavoritesMenu()
     {
         var parent = new ToolStripMenuItem("Favourites ★");
-        foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key))
+        foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key)
+                                               .Where(kv => !kv.Value.Equals("none", StringComparison.OrdinalIgnoreCase)))
         {
             bool isFav = _favorites.Contains(idx);
             var  item  = new ToolStripMenuItem((isFav ? "★  " : "☆  ") + Capitalize(name));
             int  ci    = idx;
-            item.Click += async (_, _) =>
+            item.Click += async (_, _) => await SendCmdAsync(async () =>
             {
                 var newFavs = new HashSet<int>(_favorites);
                 if (!newFavs.Add(ci)) newFavs.Remove(ci);
                 await _conn!.SetFavoritesAsync(newFavs, _favoritesTotalModes);
                 _favorites = newFavs;
-            };
-            parent.DropDownItems.Add(item);
+            });
         }
         return parent;
     }
@@ -384,11 +409,11 @@ public sealed class TrayApp : ApplicationContext
             bool cur  = mode == _spatial;
             var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + mode);
             var  cm   = mode;
-            item.Click += async (_, _) =>
+            item.Click += async (_, _) => await SendCmdAsync(async () =>
             {
                 await _conn!.SetSpatialAsync(cm);
                 _spatial = cm;
-            };
+            });
             parent.DropDownItems.Add(item);
         }
         return parent;
@@ -414,13 +439,12 @@ public sealed class TrayApp : ApplicationContext
                 var  item = new ToolStripMenuItem(
                     (cur ? "✓  " : "     ") + $"{v:+0;-0;0} dB");
                 int  cv   = v;
-                item.Click += async (_, _) =>
+                item.Click += async (_, _) => await SendCmdAsync(async () =>
                 {
                     await _conn!.SetEqBandAsync(capturedBand.BandId, cv);
-                    // Update cached EQ value
                     int i = _eq.FindIndex(b => b.BandId == capturedBand.BandId);
                     if (i >= 0) _eq[i] = _eq[i] with { Current = cv };
-                };
+                });
                 bandMenu.DropDownItems.Add(item);
             }
             parent.DropDownItems.Add(bandMenu);
@@ -437,11 +461,11 @@ public sealed class TrayApp : ApplicationContext
             bool cur  = lvl == _sidetone;
             var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + Capitalize(name));
             int  cl   = lvl;
-            item.Click += async (_, _) =>
+            item.Click += async (_, _) => await SendCmdAsync(async () =>
             {
                 await _conn!.SetSidetoneAsync(cl);
                 _sidetone = cl;
-            };
+            });
             parent.DropDownItems.Add(item);
         }
         return parent;
@@ -459,22 +483,13 @@ public sealed class TrayApp : ApplicationContext
             bool isCurrent = mac.Equals(_activeMac, StringComparison.OrdinalIgnoreCase);
             var item = new ToolStripMenuItem((isCurrent ? "✓  " : "     ") + label);
             string capturedMac = mac;
-            item.Click += async (_, _) =>
+            item.Click += async (_, _) => await SendCmdAsync(async () =>
             {
-                try
-                {
-                    SetTray(BmapIcons.Connected(_battery),
-                        $"bosectl — switching to {label}…");
-                    await _conn!.SwitchToDeviceAsync(capturedMac);
-                    _activeMac = capturedMac;
-                    SetTray(BmapIcons.Connected(_battery),
-                        $"bosectl — {_deviceName} | {_battery}%");
-                }
-                catch (Exception ex)
-                {
-                    ShowBalloon("Device switch failed", ex.Message, ToolTipIcon.Warning);
-                }
-            };
+                SetTray(BmapIcons.Connected(_battery),
+                    $"Quiet Rebellion \u2014 switching to {label}…");
+                await _conn!.SwitchToDeviceAsync(capturedMac);
+                _activeMac = (await _conn.GetSourceAsync()).mac ?? capturedMac;
+            });
             parent.DropDownItems.Add(item);
         }
 
@@ -522,12 +537,11 @@ public sealed class TrayApp : ApplicationContext
             string? newName = ShowInputDialog(
                 "Rename Device", "Enter new device name:", _deviceName);
             if (newName is not null && newName.Length > 0 && newName != _deviceName)
-            {
-                await _conn!.SetDeviceNameAsync(newName);
-                _deviceName = newName;
-                SetTray(BmapIcons.Connected(_battery),
-                    $"bosectl — {_deviceName} | {_battery}%");
-            }
+                await SendCmdAsync(async () =>
+                {
+                    await _conn!.SetDeviceNameAsync(newName);
+                    _deviceName = newName;
+                });
         };
         parent.DropDownItems.Add(rename);
         parent.DropDownItems.Add(new ToolStripSeparator());
@@ -537,12 +551,13 @@ public sealed class TrayApp : ApplicationContext
         powerOff.Click += async (_, _) =>
         {
             if (MessageBox.Show($"Power off {_deviceName}?", "Power Off",
-                    MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+                    MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+            await SendCmdAsync(async () =>
             {
                 await _conn!.PowerOffAsync();
                 if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
-                SetTray(BmapIcons.Disconnected(), "bosectl — powered off");
-            }
+                SetTray(BmapIcons.Disconnected(), "Quiet Rebellion \u2014 powered off");
+            });
         };
         parent.DropDownItems.Add(powerOff);
 
@@ -551,12 +566,13 @@ public sealed class TrayApp : ApplicationContext
         pairing.Click += async (_, _) =>
         {
             if (MessageBox.Show($"Put {_deviceName} into Bluetooth pairing mode?\nThe headphones will disconnect.",
-                    "Pairing Mode", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+                    "Pairing Mode", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+            await SendCmdAsync(async () =>
             {
                 await _conn!.EnterPairingModeAsync();
                 if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
-                SetTray(BmapIcons.Disconnected(), "bosectl — pairing mode");
-            }
+                SetTray(BmapIcons.Disconnected(), "Quiet Rebellion \u2014 pairing mode");
+            });
         };
         parent.DropDownItems.Add(pairing);
         return parent;
@@ -564,10 +580,30 @@ public sealed class TrayApp : ApplicationContext
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static ToolStripMenuItem ToggleItem(string label, Func<Task> action)
+    /// <summary>
+    /// Execute a BMAP command then re-poll device state — analogous to Android's sendCmd{} + fetchAndRefresh().
+    /// Serializes against _busy to prevent concurrent socket access from poll timer + menu actions.
+    /// </summary>
+    private async Task SendCmdAsync(Func<Task> action)
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            await action();
+            if (_conn is not null) await DoPollAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowBalloon("Error", ex.Message, ToolTipIcon.Warning);
+        }
+        finally { _busy = false; }
+    }
+
+    private ToolStripMenuItem ToggleItem(string label, Func<Task> action)
     {
         var item = new ToolStripMenuItem(label);
-        item.Click += async (_, _) => await action();
+        item.Click += async (_, _) => await SendCmdAsync(action);
         return item;
     }
 
@@ -575,20 +611,12 @@ public sealed class TrayApp : ApplicationContext
     {
         if (_conn is null) return;
         string name = ModeLabel(idx);
-        SetTray(BmapIcons.Connected(_battery), $"bosectl — switching to {name}…");
-        try
+        SetTray(BmapIcons.Connected(_battery), $"Quiet Rebellion \u2014 switching to {name}…");
+        await SendCmdAsync(async () =>
         {
             await _conn.SetModeByIndexAsync(idx);
             _modeIndex = idx;
-            SetTray(BmapIcons.Connected(_battery),
-                $"bosectl — {_deviceName} | {_battery}% | {name}");
-        }
-        catch (Exception ex)
-        {
-            ShowBalloon("Mode switch failed", ex.Message, ToolTipIcon.Warning);
-            SetTray(BmapIcons.Connected(_battery),
-                $"bosectl — {_deviceName} | {_battery}%");
-        }
+        });
     }
 
     private string ModeLabel(int idx) => QcUltra2.ModeDisplayName(idx, _modeNames);
