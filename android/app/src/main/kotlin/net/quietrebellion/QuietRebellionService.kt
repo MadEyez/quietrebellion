@@ -33,6 +33,7 @@ private const val CHANNEL_ID      = "quiet_rebellion_main"
 private const val NOTIF_ID        = 1
 const val ACTION_TOGGLE_ANC       = "net.quietrebellion.TOGGLE_ANC"
 const val ACTION_NEXT_MODE        = "net.quietrebellion.NEXT_MODE"
+const val ACTION_POWER_OFF        = "net.quietrebellion.POWER_OFF"
 
 class QuietRebellionService : Service() {
 
@@ -53,6 +54,8 @@ class QuietRebellionService : Service() {
     private var ancEnabled  = false
     private var modeNames   = mapOf<Int, String>()
     private var modeIndex   = -1
+    private var favorites   = setOf<Int>()
+    private var sourceName  = ""  // currently streaming device name
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -71,6 +74,7 @@ class QuietRebellionService : Service() {
         registerReceiver(actionReceiver, IntentFilter().apply {
             addAction(ACTION_TOGGLE_ANC)
             addAction(ACTION_NEXT_MODE)
+            addAction(ACTION_POWER_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
         }, RECEIVER_NOT_EXPORTED)
@@ -96,14 +100,18 @@ class QuietRebellionService : Service() {
         mode: Int,
         modes: Map<Int, String>,
         anc: Boolean,
+        favs: Set<Int> = emptySet(),
+        source: String = "",
     ) {
         conn        = connection
         deviceName  = name
         battery     = bat
         modeIndex   = mode
         modeNames   = modes
-        modeName    = modes[mode] ?: "Mode $mode"
+        modeName    = QcUltra2.modeDisplayName(mode, modes)
         ancEnabled  = anc
+        favorites   = favs
+        sourceName  = source
         updateNotification()
         startPolling()
     }
@@ -136,7 +144,7 @@ class QuietRebellionService : Service() {
                     if (bat != battery || mode != modeIndex) {
                         battery   = bat
                         modeIndex = mode
-                        modeName  = modeNames[mode] ?: "Mode $mode"
+                        modeName = QcUltra2.modeDisplayName(modeIndex, modeNames)
                         updateNotification()
                     }
                 } catch (e: Exception) {
@@ -177,13 +185,34 @@ class QuietRebellionService : Service() {
             this, 2, Intent(ACTION_NEXT_MODE),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val powerIntent = PendingIntent.getBroadcast(
+            this, 3, Intent(ACTION_POWER_OFF),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val title = if (deviceName.isNotEmpty())
             "$deviceName${if (battery >= 0) " · $battery%" else ""}"
         else
             getString(R.string.notif_title_disconnected)
 
-        val text = if (modeName.isNotEmpty()) modeName else ""
+        // Subtitle: source device + current mode + ANC state
+        val ancState = if (ancEnabled) "ANC on" else "ANC off"
+        val text = listOfNotNull(
+            sourceName.ifEmpty { null },
+            modeName.ifEmpty { null },
+            ancState,
+        ).joinToString(" · ")
+
+        // "Next Mode" label shows next mode name if favorites are set
+        val cycleModes = if (favorites.isNotEmpty())
+            modeNames.keys.filter { it in favorites }.sorted()
+        else
+            modeNames.keys.sorted()
+        val nextModeIdx = cycleModes.let { keys ->
+            if (keys.isEmpty()) -1
+            else keys[(keys.indexOf(modeIndex) + 1) % keys.size]
+        }
+        val nextModeName = if (nextModeIdx >= 0) QcUltra2.modeDisplayName(nextModeIdx, modeNames) else "Mode"
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -194,7 +223,8 @@ class QuietRebellionService : Service() {
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(0, if (ancEnabled) "ANC Off" else "ANC On", ancIntent)
-            .addAction(0, "Next Mode", modeIntent)
+            .addAction(0, "Switch to [$nextModeName]", modeIntent)
+            .addAction(0, "Power Off", powerIntent)
             .build()
     }
 
@@ -225,16 +255,29 @@ class QuietRebellionService : Service() {
                 }
                 ACTION_NEXT_MODE -> scope.launch {
                     try {
-                        val keys = modeNames.keys.sorted()
-                        if (keys.isEmpty()) return@launch
-                        val next = keys[(keys.indexOf(modeIndex) + 1) % keys.size]
+                        // cycle favorites only; fall back to all modes
+                        val pool = if (favorites.isNotEmpty())
+                            modeNames.keys.filter { it in favorites }.sorted()
+                        else
+                            modeNames.keys.sorted()
+                        if (pool.isEmpty()) return@launch
+                        val next = pool[(pool.indexOf(modeIndex) + 1) % pool.size]
                         c.setModeByIndex(next)
                         modeIndex = next
-                        modeName = modeNames[next] ?: "Mode $next"
+                        modeName = QcUltra2.modeDisplayName(next, modeNames)
                         updateNotification()
                     } catch (e: Exception) {
                         Log.w(TAG, "Mode switch failed: ${e.message}")
                     }
+                }
+                ACTION_POWER_OFF -> scope.launch {
+                    try {
+                        c.powerOff()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Power off failed: ${e.message}")
+                    }
+                    // connection will drop — clean up
+                    detach()
                 }
             }
         }

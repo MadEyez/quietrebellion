@@ -9,6 +9,14 @@ import java.util.UUID
 
 enum class SpatialMode(val byte: Byte) { Off(0), Room(1), Head(2) }
 
+
+data class ButtonConfig(
+    val buttonId: Int,
+    val eventId: Int,
+    val actionId: Int,
+    val supportedActions: Set<Int>,  // decoded from 4-byte bitmask in response
+)
+
 data class AudioSettings(
     val cncLevel:  Int,
     val autoCnc:   Boolean,
@@ -33,21 +41,33 @@ object QcUltra2 {
     val Sidetone      = 1.toByte() to 11.toByte()  // GET/SETGET sidetone
     val Battery       = 2.toByte() to 2.toByte()   // GET → [percent]
     val ChargingState = 2.toByte() to 3.toByte()   // GET → [0=not charging, 1=charging]
-    val PairedDevices = 4.toByte() to 4.toByte()   // GET → paired MAC list
+    val PairedDevices = 4.toByte() to 4.toByte()
+    val DeviceInfo    = 4.toByte() to 5.toByte()  // GET(mac) → STATUS: [mac(6), ?, ?, 0x03, name...]   // GET → paired MAC list
+    val Pairing       = 4.toByte() to 8.toByte()   // START [0x01] → enter pairing mode
     val Routing       = 4.toByte() to 12.toByte()  // START → switch audio device
     val Source        = 5.toByte() to 1.toByte()   // GET → active audio source
+    val Power         = 7.toByte() to 4.toByte()   // START [0x00] → power off
     val GetAllModes   = 31.toByte() to 1.toByte()  // START → drain STATUS [31.6]
     val CurrentMode   = 31.toByte() to 3.toByte()  // GET/START mode index
     val ModeConfigStatus = 31.toByte() to 6.toByte()
     val AudioSettings = 31.toByte() to 10.toByte() // GET/SETGET 5-byte audio config
     val Favorites     = 31.toByte() to 8.toByte()  // GET/SETGET favorite modes bitmask
+    val Buttons       = 1.toByte()  to 9.toByte()  // GET → [bid,evt,action,bitmask4]; SETGET [bid,evt,action]
+    val AutoPlayPause = 1.toByte()  to 24.toByte() // GET/SETGET [bool] auto play/pause on ear removal
+    val AutoAnswer    = 1.toByte()  to 27.toByte() // GET/SETGET [bool] auto-answer calls
+
 
     val MODE_NAMES = mapOf(0 to "Quiet", 1 to "Aware", 2 to "Immersion", 3 to "Cinema")
+
+    /** Resolve a mode index to a display name. 0xFF = device left the saved mode (manual ANC change etc.). */
+    fun modeDisplayName(index: Int, names: Map<Int, String> = MODE_NAMES): String =
+        names[index] ?: when (index) { 0xFF, 255 -> "Custom"; -1 -> ""; else -> "Mode $index" }
 
 
     // ── Parsers ──────────────────────────────────────────────────────────────
 
     fun parseBattery(p: ByteArray): Int = if (p.isNotEmpty()) p[0].toInt() and 0xFF else 0
+
 
     fun parseFirmware(p: ByteArray): String = String(p, Charsets.US_ASCII).trimEnd('\u0000')
 
@@ -113,6 +133,16 @@ object QcUltra2 {
         val mac  = if (p[2] == 1.toByte() && p.size >= 9)
             p.drop(3).take(6).joinToString(":") { "%02X".format(it) } else null
         return type to mac
+    }
+
+
+    /** Parse 4.5 STATUS payload: [mac(6), unk, unk, 0x03, name...] → display name or null. */
+    fun parseDeviceInfo(p: ByteArray): String? {
+        // find 0x03 marker after the 6-byte MAC prefix, name follows
+        val nameStart = p.indexOf(0x03.toByte(), 6)
+        if (nameStart < 0 || nameStart + 1 >= p.size) return null
+        return String(p, nameStart + 1, p.size - nameStart - 1, Charsets.UTF_8)
+            .trimEnd('\u0000').ifBlank { null }
     }
 
     fun parsePairedDevices(p: ByteArray): List<String> {

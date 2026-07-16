@@ -62,20 +62,24 @@ class MainActivity : AppCompatActivity() {
     // conn delegates to service; falls back to null if no service yet
     private val conn: BoseConnection? get() = boseService?.conn
 
-    // ── Bluetooth adapter (set once in connect()) ─────────────────────────────
-    private var btAdapter: BluetoothAdapter? = null
+    // ── Bluetooth adapter ─────────────────────────────────────────────────────
+    private val btAdapter: BluetoothAdapter? by lazy {
+        (getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+    }
 
     // ── Cached state ──────────────────────────────────────────────────────────
     private var modeNames: Map<Int, String> = QcUltra2.MODE_NAMES
     private var currentModeIndex = -1
-    private var audioSettings    = AudioSettings(0, true, SpatialMode.Off, false, false) // pre-fetch placeholder; overwritten by device state
+    private var audioSettings    = AudioSettings(0, true, SpatialMode.Off, false, false)
     private var eqBands          = listOf<EqBand>()
     private var sidetone         = 0
     private var multipoint       = false
     private var favorites        = setOf<Int>()
     private var favoritesTotalModes = 11
-    private var pairedMacs       = listOf<String>()
+    private var pairedDevices     = mapOf<String, String>()
     private var activeMac: String? = null
+    private var autoPlayPause     = false
+    private var autoAnswer        = false
 
     // Guards against re-entrant UI updates triggering command sends
     private var updatingUi = false
@@ -191,9 +195,7 @@ class MainActivity : AppCompatActivity() {
 
     @android.annotation.SuppressLint("MissingPermission")
     private fun connect() {
-        val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
-            ?: return setStatus("Bluetooth not available")
-        btAdapter = adapter
+        val adapter = btAdapter ?: return setStatus("Bluetooth not available")
 
         val devices = try {
             DeviceDiscovery.bondedDevices(adapter)
@@ -268,13 +270,17 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val (_, mac) = c.source()
-                activeMac  = mac
-                pairedMacs = c.pairedDeviceMacs()
+                activeMac   = mac
+                pairedDevices = c.pairedDevicesWithNames()
             } catch (_: Exception) { }
+
+            autoPlayPause = try { c.autoPlayPause()   } catch (_: Exception) { false }
+            autoAnswer    = try { c.autoAnswer()      } catch (_: Exception) { false }
 
             // Attach to service so it keeps running in background
             boseService?.attach(c, deviceName, battery, currentModeIndex,
-                modeNames, audioSettings.ancToggle)
+                modeNames, audioSettings.ancToggle, favorites,
+                source = activeMac?.let { pairedDevices[it] } ?: "")
 
             updateUi()
         } catch (e: Exception) {
@@ -295,7 +301,9 @@ class MainActivity : AppCompatActivity() {
             applySidetone()
             b.swMultipoint.isChecked = multipoint
             applyPairedDevices()
-        } finally {
+            b.swAutoPlayPause.isChecked = autoPlayPause
+            b.swAutoAnswer.isChecked = autoAnswer
+            applyNowPlaying()        } finally {
             updatingUi = false
         }
     }
@@ -312,12 +320,11 @@ class MainActivity : AppCompatActivity() {
                     tag  = idx
                     if (idx == currentModeIndex) isChecked = true
                     setOnLongClickListener {
-                        val newFavs = if (isFav) favorites - idx else favorites + idx
-                        sendCmd {
-                            conn!!.setFavorites(newFavs, favoritesTotalModes)
-                            favorites = newFavs
-                            runOnUiThread { populateModes() }
-                        }
+                    val newFavs = if (isFav) favorites - idx else favorites + idx
+                    sendCmd {
+                        conn!!.setFavorites(newFavs, favoritesTotalModes)
+                        favorites = newFavs
+                    }
                         true
                     }
                 }
@@ -326,15 +333,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyCnc() {
-        val lvl = audioSettings.cncLevel
-        b.sbCnc.progress = lvl
-        b.tvCncLevel.text = when (lvl) {
-            0  -> "CNC Level: 0  (max ANC)"
-            10 -> "CNC Level: 10  (max Aware)"
-            else -> "CNC Level: $lvl"
-        }
-        b.swAutoCnc.isChecked = audioSettings.autoCnc
-        b.sbCnc.isEnabled = !audioSettings.autoCnc
+        val auto = audioSettings.autoCnc
+        // UI is inverted: slider 10 = max ANC, device stores 0 = max ANC
+        val uiVal = 10 - audioSettings.cncLevel
+        b.sbCnc.progress = uiVal
+        b.tvCncLevel.text = "ANC: $uiVal"
+        b.swAutoCnc.isChecked = auto
+        b.layoutManualCnc.visibility = if (auto) View.GONE else View.VISIBLE
+        b.tvAutoCncStatus.visibility = if (auto) View.VISIBLE else View.GONE
     }
 
     private fun applySpatial() {
@@ -366,9 +372,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyPairedDevices() {
-        // Only meaningful when multipoint is on, an active source is known,
-        // and there is at least one OTHER paired device to switch to.
-        val others = pairedMacs.filter { !it.equals(activeMac, ignoreCase = true) }
+        val others = pairedDevices.keys.filter { !it.equals(activeMac, ignoreCase = true) }
         val show = multipoint && activeMac != null && others.isNotEmpty()
         b.tvPairedDevicesLabel.visibility = if (show) View.VISIBLE else View.GONE
         b.tvActiveDevice.visibility       = if (show) View.VISIBLE else View.GONE
@@ -376,25 +380,28 @@ class MainActivity : AppCompatActivity() {
         b.rgPairedDevices.visibility      = if (show) View.VISIBLE else View.GONE
         if (!show) return
 
-        @android.annotation.SuppressLint("MissingPermission")
-        val activeName = activeMac?.let {
-            btAdapter?.getRemoteDevice(it)?.name?.takeIf { n -> n.isNotBlank() } ?: shortenMac(it)
-        } ?: "unknown"
+        val activeName = activeMac?.let { pairedDevices[it] ?: shortenMac(it) } ?: "unknown"
         b.tvActiveDevice.text = "Now playing: $activeName"
 
         b.rgPairedDevices.removeAllViews()
         others.forEach { mac ->
-            // ponytail: name only available if mac is bonded on this Android device; falls back to shortened MAC
-            @android.annotation.SuppressLint("MissingPermission")
-            val label = btAdapter?.getRemoteDevice(mac)?.name?.takeIf { it.isNotBlank() } ?: shortenMac(mac)
+            val label = pairedDevices[mac] ?: shortenMac(mac)
             val rb = RadioButton(this).apply {
-                id   = View.generateViewId()
+                id  = View.generateViewId()
                 text = label
                 tag  = mac
             }
             b.rgPairedDevices.addView(rb)
         }
     }
+
+
+    private fun applyNowPlaying() {
+        val sourceName = activeMac?.let { pairedDevices[it] } ?: return run { b.tvNowPlaying.visibility = View.GONE }
+        b.tvNowPlaying.text = sourceName
+        b.tvNowPlaying.visibility = View.VISIBLE
+    }
+
 
     // ── Wire UI listeners ─────────────────────────────────────────────────────
 
@@ -434,8 +441,9 @@ class MainActivity : AppCompatActivity() {
         b.sbCnc.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
                 if (!fromUser || updatingUi) return
-                audioSettings = audioSettings.copy(cncLevel = progress)
-                applyCnc()
+                // invert: UI 10 = max ANC = device 0
+                audioSettings = audioSettings.copy(cncLevel = 10 - progress)
+                b.tvCncLevel.text = "ANC: $progress"
             }
             override fun onStartTrackingTouch(sb: SeekBar) = Unit
             override fun onStopTrackingTouch(sb: SeekBar) {
@@ -465,7 +473,6 @@ class MainActivity : AppCompatActivity() {
                 val s = audioSettings.copy(autoCnc = checked)
                 conn!!.writeAudioSettings(s)
                 audioSettings = s
-                runOnUiThread { b.sbCnc.isEnabled = !checked }
             }
         }
 
@@ -504,21 +511,57 @@ class MainActivity : AppCompatActivity() {
             val mac = group.findViewById<RadioButton>(checkedId)?.tag as? String ?: return@setOnCheckedChangeListener
             sendCmd {
                 conn!!.switchToDevice(mac)
-                // Confirm actual active source from device; fall back to optimistic update
                 activeMac = try { conn!!.source().second ?: mac } catch (_: Exception) { mac }
-                runOnUiThread { applyPairedDevices() }
             }
+        }
+
+        // Media controls
+
+        b.btnPowerOff.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Power Off")
+                .setMessage("Power off ${b.tvDeviceName.text}?")
+                .setPositiveButton("Power Off") { _, _ ->
+                    sendCmd { conn!!.powerOff() }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+
+        // Auto Play/Pause + Auto Answer
+        b.swAutoPlayPause.setOnCheckedChangeListener { _, checked ->
+            if (updatingUi) return@setOnCheckedChangeListener
+            sendCmd { conn!!.setAutoPlayPause(checked); autoPlayPause = checked }
+        }
+        b.swAutoAnswer.setOnCheckedChangeListener { _, checked ->
+            if (updatingUi) return@setOnCheckedChangeListener
+            sendCmd { conn!!.setAutoAnswer(checked); autoAnswer = checked }
+        }
+
+        // Pairing mode
+        b.btnPairingMode.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Pairing Mode")
+                .setMessage("Enter Bluetooth pairing mode? The headphones will disconnect.")
+                .setPositiveButton("Enter Pairing") { _, _ ->
+                    sendCmd { conn!!.enterPairingMode() }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /** Run a suspending BMAP command, show error toast on failure. */
+    /** Run a suspending BMAP command, then immediately refresh UI from device. */
     private fun sendCmd(block: suspend () -> Unit) {
         if (conn == null) { Toast.makeText(this, "Not connected", Toast.LENGTH_SHORT).show(); return }
         lifecycleScope.launch {
-            try { block() }
-            catch (e: Exception) {
+            try {
+                block()
+                fetchAndRefresh()
+            } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, e.message ?: "Error", Toast.LENGTH_SHORT).show()
             }
         }

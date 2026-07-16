@@ -43,8 +43,10 @@ public sealed class TrayApp : ApplicationContext
     private string  _deviceName = "Bose QC Ultra";
     private string  _firmware   = "";
     private int     _battery    = -1;
+    private bool?   _charging   = null;
     private int     _modeIndex  = -1;
     private int     _cncLevel   = 0;
+    private bool    _autoCnc    = false;
     private bool    _ancOn      = false;
     private bool    _windBlock  = false;
     private SpatialMode _spatial   = SpatialMode.Off;
@@ -52,6 +54,10 @@ public sealed class TrayApp : ApplicationContext
     private bool    _multipoint = false;
     private List<EqBand> _eq   = new();
     private Dictionary<int, string> _modeNames = new();
+    private IReadOnlySet<int> _favorites = new HashSet<int>();
+    private int _favoritesTotalModes = 11;
+    private bool _autoPlayPause = false;
+    private bool _autoAnswer    = false;
 
     // ── Multipoint switch state ───────────────────────────────────────────────
     private List<(string mac, string label)> _pairedDevices = new();
@@ -117,6 +123,9 @@ public sealed class TrayApp : ApplicationContext
             try { _eq         = await _conn.EqAsync();                } catch { }
             try { _sidetone   = await _conn.SidetoneAsync();          } catch { }
             try { _multipoint = await _conn.MultipointAsync();        } catch { }
+            try { (_favorites, _favoritesTotalModes) = await _conn.FavoritesAsync(); } catch { }
+            try { _autoPlayPause  = await _conn.AutoPlayPauseAsync();   } catch { }
+            try { _autoAnswer     = await _conn.AutoAnswerAsync();      } catch { }
             try { await RefreshMultipointDevicesAsync();               } catch { }
 
             await DoPollAsync();
@@ -147,15 +156,18 @@ public sealed class TrayApp : ApplicationContext
     private async Task DoPollAsync()
     {
         _battery    = await _conn!.BatteryAsync();
+        _charging   = await _conn.ChargingStateAsync();
         _modeIndex  = await _conn.ModeIndexAsync();
         var audio   = await _conn.AudioSettingsAsync();
         _ancOn      = audio.AncToggle;
+        _autoCnc    = audio.AutoCnc;
         _cncLevel   = audio.CncLevel;
         _windBlock  = audio.WindBlock;
         _spatial    = audio.Spatial;
 
+        string chargingIcon = _charging == true ? " ⚡" : "";
         SetTray(BmapIcons.Connected(_battery),
-            $"bosectl — {_deviceName} | {_battery}% | {ModeLabel(_modeIndex)}");
+            $"bosectl — {_deviceName} | {_battery}%{chargingIcon} | {ModeLabel(_modeIndex)}");
         NotifyLowBattery();
     }
 
@@ -252,9 +264,10 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Clear();
 
         // Header
+        string chargingIcon = _charging == true ? " ⚡" : "";
         menu.Items.Add(new ToolStripMenuItem(
             _conn is not null
-                ? $"{_deviceName}  —  {(_battery >= 0 ? $"{_battery}%" : "?")}  ✓"
+                ? $"{_deviceName}  —  {(_battery >= 0 ? $"{_battery}%{chargingIcon}" : "?")}  ✓"
                 : "Not connected")
             { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
@@ -265,11 +278,14 @@ public sealed class TrayApp : ApplicationContext
             foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key))
             {
                 bool cur  = idx == _modeIndex;
-                var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + Capitalize(name));
+                bool isFav = _favorites.Contains(idx);
+                string favStar = isFav ? "★ " : "     ";
+                var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + favStar + Capitalize(name));
                 int  ci   = idx;
                 item.Click += async (_, _) => await SwitchModeAsync(ci);
                 menu.Items.Add(item);
             }
+            menu.Items.Add(FavoritesMenu());
             menu.Items.Add(new ToolStripSeparator());
 
             // ── Noise control ─────────────────────────────────────────────────
@@ -292,6 +308,10 @@ public sealed class TrayApp : ApplicationContext
                 menu.Items.Add(SwitchDeviceMenu());
             menu.Items.Add(new ToolStripSeparator());
 
+            // ── Settings ──────────────────────────────────────────────────────
+            menu.Items.Add(SettingsMenu());
+            menu.Items.Add(new ToolStripSeparator());
+
             // ── Device info ───────────────────────────────────────────────────
             menu.Items.Add(DeviceInfoMenu());
             menu.Items.Add(new ToolStripSeparator());
@@ -310,14 +330,47 @@ public sealed class TrayApp : ApplicationContext
 
     private ToolStripMenuItem CncMenu()
     {
-        var parent = new ToolStripMenuItem($"CNC Level:  {_cncLevel}");
+        string label = _autoCnc ? $"CNC Level:  Auto" : $"CNC Level:  {_cncLevel}";
+        var parent = new ToolStripMenuItem(label);
+
+        // Auto-CNC toggle at top
+        bool autoCur = _autoCnc;
+        var autoItem = new ToolStripMenuItem((autoCur ? "✓  " : "     ") + "Auto (device-managed)");
+        autoItem.Click += async (_, _) =>
+        {
+            await _conn!.SetAutoCncAsync(!_autoCnc);
+            _autoCnc = !_autoCnc;
+        };
+        parent.DropDownItems.Add(autoItem);
+        parent.DropDownItems.Add(new ToolStripSeparator());
+
         for (int lvl = 0; lvl <= 10; lvl++)
         {
             string suffix = lvl == 0 ? "  (max ANC)" : lvl == 10 ? "  (max aware)" : "";
-            bool cur = lvl == _cncLevel;
+            bool cur = !_autoCnc && lvl == _cncLevel;
             var  item = new ToolStripMenuItem((cur ? "✓  " : "     ") + lvl + suffix);
             int  cl   = lvl;
-            item.Click += async (_, _) => { await _conn!.SetCncLevelAsync(cl); _cncLevel = cl; };
+            item.Click += async (_, _) => { await _conn!.SetCncLevelAsync(cl); _cncLevel = cl; _autoCnc = false; };
+            parent.DropDownItems.Add(item);
+        }
+        return parent;
+    }
+
+    private ToolStripMenuItem FavoritesMenu()
+    {
+        var parent = new ToolStripMenuItem("Favourites ★");
+        foreach (var (idx, name) in _modeNames.OrderBy(kv => kv.Key))
+        {
+            bool isFav = _favorites.Contains(idx);
+            var  item  = new ToolStripMenuItem((isFav ? "★  " : "☆  ") + Capitalize(name));
+            int  ci    = idx;
+            item.Click += async (_, _) =>
+            {
+                var newFavs = new HashSet<int>(_favorites);
+                if (!newFavs.Add(ci)) newFavs.Remove(ci);
+                await _conn!.SetFavoritesAsync(newFavs, _favoritesTotalModes);
+                _favorites = newFavs;
+            };
             parent.DropDownItems.Add(item);
         }
         return parent;
@@ -437,6 +490,24 @@ public sealed class TrayApp : ApplicationContext
         return parent;
     }
 
+    private ToolStripMenuItem SettingsMenu()
+    {
+        var parent = new ToolStripMenuItem("Settings");
+
+
+        // Auto Play/Pause
+        parent.DropDownItems.Add(ToggleItem(
+            $"Auto Play/Pause:  {(_autoPlayPause ? "On" : "Off")}",
+            async () => { await _conn!.SetAutoPlayPauseAsync(!_autoPlayPause); _autoPlayPause = !_autoPlayPause; }));
+
+        // Auto Answer
+        parent.DropDownItems.Add(ToggleItem(
+            $"Auto Answer:  {(_autoAnswer ? "On" : "Off")}",
+            async () => { await _conn!.SetAutoAnswerAsync(!_autoAnswer); _autoAnswer = !_autoAnswer; }));
+
+        return parent;
+    }
+
     private ToolStripMenuItem DeviceInfoMenu()
     {
         var parent = new ToolStripMenuItem("Device Info");
@@ -459,6 +530,35 @@ public sealed class TrayApp : ApplicationContext
             }
         };
         parent.DropDownItems.Add(rename);
+        parent.DropDownItems.Add(new ToolStripSeparator());
+
+        // Power Off
+        var powerOff = new ToolStripMenuItem("  Power Off");
+        powerOff.Click += async (_, _) =>
+        {
+            if (MessageBox.Show($"Power off {_deviceName}?", "Power Off",
+                    MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+            {
+                await _conn!.PowerOffAsync();
+                if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
+                SetTray(BmapIcons.Disconnected(), "bosectl — powered off");
+            }
+        };
+        parent.DropDownItems.Add(powerOff);
+
+        // Pairing Mode
+        var pairing = new ToolStripMenuItem("  Enter Pairing Mode");
+        pairing.Click += async (_, _) =>
+        {
+            if (MessageBox.Show($"Put {_deviceName} into Bluetooth pairing mode?\nThe headphones will disconnect.",
+                    "Pairing Mode", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+            {
+                await _conn!.EnterPairingModeAsync();
+                if (_conn is not null) { await _conn.DisposeAsync(); _conn = null; }
+                SetTray(BmapIcons.Disconnected(), "bosectl — pairing mode");
+            }
+        };
+        parent.DropDownItems.Add(pairing);
         return parent;
     }
 
@@ -491,10 +591,7 @@ public sealed class TrayApp : ApplicationContext
         }
     }
 
-    private string ModeLabel(int idx) =>
-        _modeNames.TryGetValue(idx, out var n) ? n
-        : QcUltra2.ModeNames.TryGetValue(idx, out n) ? n
-        : $"custom({idx})";
+    private string ModeLabel(int idx) => QcUltra2.ModeDisplayName(idx, _modeNames);
 
     private void SetTray(Icon icon, string text)
     {

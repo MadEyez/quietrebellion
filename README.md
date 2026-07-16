@@ -35,7 +35,7 @@ connection to the headphones.
 
 | Device | NC Control | EQ | Spatial | Profiles | Buttons | Status |
 |--------|-----------|-----|---------|----------|---------|--------|
-| **QC Ultra Headphones 2** | CNC 0-10 slider | 3-band | room/head | 7 custom slots | Shortcut remap | Verified |
+| **QC Ultra 2 Headphones** | ANC 0–10 slider + Auto-ANC | 3-band | room/head | 7 custom slots | Read-only (remap needs cloud auth) | Verified |
 | **QuietComfort 35 / 35 II** | ANR off/high/wind/low | — | — | — | Action remap (VPA/ANC) | Verified |
 
 ### Device Roadmap

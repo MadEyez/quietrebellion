@@ -1,0 +1,12 @@
+New features:
+- Auto Play/Pause (pause when headphones are removed)
+- Auto-answer calls toggle
+- Power Off from the app
+- Enter Bluetooth Pairing Mode
+- Device names in multipoint list now resolved from headphone memory (no more raw MAC addresses)
+- Now Playing source device shown in status card
+- Persistent notification: ANC toggle, mode cycling (favourites only), Power Off
+- ANC slider inverted: higher = more noise cancellation
+- Mode 255 shown as "Custom" instead of raw index
+- Immediate UI refresh after every action (no more waiting for the 15 s poll)
+

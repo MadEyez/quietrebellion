@@ -12,15 +12,22 @@ and without root.
 
 ## Features
 
-- Noise control level (CNC 0–10) + Auto-CNC toggle
+- Noise control level (ANC 0–10, inverted: 10=max ANC) + Auto-ANC toggle
 - Spatial audio (Off / Room / Head)
 - Wind Block
 - 3-band EQ (Bass / Mid / Treble)
 - Sidetone
-- Multipoint connection + device switching
+- Multipoint connection + device switching with device names (via [4.5] DeviceInfo)
 - Listening mode selection (Quiet / Aware / Immersion / Cinema + custom slots)
+- Favorite modes (long-press a mode to toggle ★)
+- Auto Play/Pause (pause on ear removal)
+- Auto Answer calls
 - Device rename
-- **Foreground service** – connection stays alive when you leave the app
+- Power Off
+- Enter Bluetooth Pairing Mode
+- **Now Playing** — shows streaming device name in status
+- **Foreground service** — connection stays alive when app is in background
+- **Persistent notification** with ANC toggle, mode cycling (favorites only), power off
 
 
 ## Requirements
@@ -96,9 +103,7 @@ MainActivity ──► BoseService (ForegroundService)
 - **`QcUltra2`** – feature addresses, parsers, builders for the wolverine device
 - **`BoseConnection`** – typed high-level API (port of `connection.py` / `BoseConnection.cs`)
 - **`BluetoothTransport`** – RFCOMM socket with drain mode for multi-packet responses
-- **`BoseService`** – keeps connection alive in background, drives persistent notification
-
-## Permissions
+- **`QuietRebellionService`** – keeps connection alive in background, drives persistent notification## Permissions
 
 | Permission | Why |
 |---|---|

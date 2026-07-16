@@ -1,27 +1,49 @@
-Quiet Rebellion lets you control your Bose QC Ultra Headphones (2nd Gen) directly over Bluetooth RFCOMM — without the Bose app, without a cloud account, and without sending any data off your device.
+Quiet Rebellion gives you full control over your Bose QC Ultra Headphones (2nd Gen) directly over Bluetooth — without the Bose app, without a cloud account, and without sending any data off your device.
 
-It implements the BMAP protocol (Bose Messaging and Protocol), the same protocol the official app uses, but accessed through the unauthenticated SETGET operator. No keys are extracted, no encryption is broken, no traffic is replayed.
+It implements the BMAP protocol (Bose Messaging and Protocol), the same protocol the official app uses, accessed through the unauthenticated SETGET and START operators. No keys are extracted, no encryption is broken, no traffic is replayed.
 
 <b>Supported device</b>
-- Bose QuietComfort Ultra Headphones (2nd Gen), codename "wolverine"
+Bose QuietComfort Ultra Headphones (2nd Gen) — codename "wolverine"
 
-<b>Features</b>
-- Noise cancellation level (CNC 0–10) + Auto-CNC toggle
-- Spatial audio (Off / Room / Head)
-- Wind Block
-- 3-band EQ (Bass / Mid / Treble)
-- Sidetone
-- Listening mode (Quiet / Aware / Immersion / Cinema + custom slots)
-- Multipoint connection + device switching
+<b>Noise Control</b>
+- ANC level 0–10 (0 = full isolation, 10 = full awareness)
+- Auto-ANC toggle (device picks level automatically)
+- Wind Block on/off
+- Spatial Audio: Off / Room / Head
+
+<b>Sound</b>
+- 3-band graphic equalizer (Bass / Mid / Treble, –10 to +10 dB)
+- Sidetone level (Off / Low / Medium / High)
+
+<b>Listening Modes</b>
+- Switch between Quiet, Aware, Immersion, Cinema
+- Custom mode slots (up to 7 user profiles)
+- Favourite modes — mark modes with ★, long-press any mode to toggle
+
+<b>Connections</b>
+- Multipoint on/off
+- Switch active audio source between paired devices (names resolved from headphone memory)
+- Enter Bluetooth pairing mode
+
+<b>Device Settings</b>
+- Auto Play/Pause (pause when headphones removed)
+- Auto-answer calls
 - Device rename
-- Foreground service — connection stays alive when you leave the app
+- Power off
+
+<b>System Integration</b>
+- Persistent foreground notification — connection stays alive when the app is in the background
+- Notification actions: ANC toggle · Switch to [next mode] · Power Off
+- Mode cycling respects your favourite list
 
 <b>Requirements</b>
 - Android 8.0+ (API 26)
 - Bose QC Ultra Headphones (2nd Gen) already paired via Android Bluetooth settings
-- The Bose app must not be running (it holds the RFCOMM channel)
+- The Bose app must not be running while this app is active (both hold the RFCOMM channel)
 
-<b>Author</b>
-Developed by <a href="https://github.com/MadEyez">MadEyez</a>. Source code: <a href="https://github.com/MadEyez/quietrebellion">https://github.com/MadEyez/quietrebellion</a>
+<b>Privacy</b>
+No network access. No analytics. No accounts. All communication is local Bluetooth only.
 
+<b>Open Source</b>
+Source code: <a href="https://github.com/MadEyez/quietrebellion">github.com/MadEyez/quietrebellion</a>
 Fork of the original <a href="https://github.com/aaronsb/bosectl">aaronsb/bosectl</a> protocol library.

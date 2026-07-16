@@ -152,6 +152,17 @@ static async Task PrintStatusAsync(BoseConnection conn)
     Console.WriteLine($"Auto CNC    : {(audio.AutoCnc ? "on" : "off")}");
     Console.WriteLine($"Spatial     : {audio.Spatial.ToString().ToLowerInvariant()}");
 
+    try
+    {
+        bool app = await conn.AutoPlayPauseAsync();
+        Console.WriteLine($"Auto pause  : {(app ? "on" : "off")}");
+    } catch { }
+    try
+    {
+        bool aa = await conn.AutoAnswerAsync();
+        Console.WriteLine($"Auto answer : {(aa ? "on" : "off")}");
+    } catch { }
+
     if (eq.Count > 0)
     {
         Console.WriteLine("EQ          :");

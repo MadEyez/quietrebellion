@@ -316,6 +316,7 @@ public sealed class BoseConnection : IAsyncDisposable
     /// <summary>
     /// Set noise cancellation level 0–10.
     /// Reads current audio settings and writes back with the overridden CNC level.
+    /// Forces AutoCnc=false so the explicit level is not ignored by the firmware.
     /// bmap: GET [31.10] then SETGET [31.10] with new payload.
     /// </summary>
     public async Task SetCncLevelAsync(int level)
@@ -323,7 +324,8 @@ public sealed class BoseConnection : IAsyncDisposable
         if (level is < 0 or > 10)
             throw new ArgumentOutOfRangeException(nameof(level), "CNC level must be 0–10");
         var s = await AudioSettingsAsync();
-        await WriteAudioSettingsAsync(s with { CncLevel = level });
+        // ponytail: AutoCnc=true → firmware ignores explicit level; must clear it first.
+        await WriteAudioSettingsAsync(s with { CncLevel = level, AutoCnc = false });
     }
 
     /// <summary>
@@ -337,6 +339,54 @@ public sealed class BoseConnection : IAsyncDisposable
     }
 
     /// <summary>
+    /// Toggle Auto-CNC (device-managed noise control level) on or off.
+    /// bmap: GET [31.10] then SETGET [31.10].
+    /// </summary>
+    public async Task SetAutoCncAsync(bool enabled)
+    {
+        var s = await AudioSettingsAsync();
+        await WriteAudioSettingsAsync(s with { AutoCnc = enabled });
+    }
+
+    /// <summary>
+    /// Charging state: true=charging, false=not charging, null=unknown.
+    /// bmap: GET [2.3] → [0=not charging, 1=charging]
+    /// </summary>
+    public async Task<bool?> ChargingStateAsync()
+    {
+        var (fb, fn) = QcUltra2.ChargingState;
+        try
+        {
+            var resp = await GetAsync(fb, fn);
+            return QcUltra2.ParseChargingState(resp.Payload);
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Favourite mode indices and total mode count.
+    /// bmap: GET [31.8] → [totalModes, 0x00, maskByte]
+    /// </summary>
+    public async Task<(IReadOnlySet<int> favs, int totalModes)> FavoritesAsync()
+    {
+        var (fb, fn) = QcUltra2.Favorites;
+        var resp = await GetAsync(fb, fn);
+        return QcUltra2.ParseFavorites(resp.Payload);
+    }
+
+    /// <summary>
+    /// Write the favourite-modes bitmask.
+    /// bmap: SETGET [31.8] payload=[totalModes, 0x00, maskByte]
+    /// </summary>
+    public async Task SetFavoritesAsync(IReadOnlySet<int> favSet, int totalModes = 11)
+    {
+        var (fb, fn) = QcUltra2.Favorites;
+        var pkt = BmapProtocol.Build(fb, fn, Op.SetGet, QcUltra2.BuildFavorites(totalModes, favSet));
+        var raw = await _t.SendRecvAsync(pkt);
+        ThrowIfError(BmapProtocol.Parse(raw));
+    }
+
+    /// <summary>
     /// Set spatial audio mode.
     /// bmap: GET [31.10] then SETGET [31.10].
     /// </summary>
@@ -344,6 +394,62 @@ public sealed class BoseConnection : IAsyncDisposable
     {
         var s = await AudioSettingsAsync();
         await WriteAudioSettingsAsync(s with { Spatial = mode });
+    }
+
+
+    /// <summary>Auto Play/Pause (pause on ear removal).</summary>
+    public async Task<bool> AutoPlayPauseAsync()
+    {
+        var (fb, fn) = QcUltra2.AutoPlayPause;
+        var resp = await GetAsync(fb, fn);
+        return resp.Payload.Length > 0 && resp.Payload[0] != 0;
+    }
+
+    /// <summary>Toggle auto play/pause.</summary>
+    public async Task SetAutoPlayPauseAsync(bool enabled)
+    {
+        var (fb, fn) = QcUltra2.AutoPlayPause;
+        ThrowIfError(BmapProtocol.Parse(
+            await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }))));
+    }
+
+    /// <summary>Auto-answer calls.</summary>
+    public async Task<bool> AutoAnswerAsync()
+    {
+        var (fb, fn) = QcUltra2.AutoAnswer;
+        var resp = await GetAsync(fb, fn);
+        return resp.Payload.Length > 0 && resp.Payload[0] != 0;
+    }
+
+    /// <summary>Toggle auto-answer.</summary>
+    public async Task SetAutoAnswerAsync(bool enabled)
+    {
+        var (fb, fn) = QcUltra2.AutoAnswer;
+        ThrowIfError(BmapProtocol.Parse(
+            await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.SetGet, new byte[] { (byte)(enabled ? 1 : 0) }))));
+    }
+
+    /// <summary>
+    /// Power off the headphones.
+    /// bmap: START [7.4] payload=[0x00] — device disconnects immediately after.
+    /// </summary>
+    public async Task PowerOffAsync()
+    {
+        var (fb, fn) = QcUltra2.Power;
+        // ponytail: socket closes on the device side after power-off; swallow the IO exception.
+        try { await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.Start, new byte[] { 0x00 })); }
+        catch { /* expected — device disconnects */ }
+    }
+
+    /// <summary>
+    /// Enter Bluetooth pairing mode.
+    /// bmap: START [4.8] payload=[0x01] — device may disconnect.
+    /// </summary>
+    public async Task EnterPairingModeAsync()
+    {
+        var (fb, fn) = QcUltra2.Pairing;
+        try { await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.Start, new byte[] { 0x01 })); }
+        catch { }
     }
 
     // ── Low-level helpers ─────────────────────────────────────────────────────

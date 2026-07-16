@@ -73,6 +73,17 @@
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
+                    <!-- Now Playing -->
+                    <TextView
+                        android:id="@+id/tvNowPlaying"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorPrimary" />
+
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -92,7 +103,15 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
                             android:text="Rename…" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPowerOff"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Off" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -144,17 +163,56 @@
                         android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:layout_marginBottom="8dp" />
 
+                    <!-- Manual ANC controls (hidden when Auto ANC is on) -->
+                    <LinearLayout
+                        android:id="@+id/layoutManualCnc"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvCncLevel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="ANC: 0"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                        <SeekBar
+                            android:id="@+id/sbCnc"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:max="10" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="4dp">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="◀ Aware"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="ANC ▶"
+                                android:gravity="end"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Status shown instead of slider when Auto ANC is on -->
                     <TextView
-                        android:id="@+id/tvCncLevel"
+                        android:id="@+id/tvAutoCncStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="CNC Level: 0  (max ANC)"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                    <SeekBar
-                        android:id="@+id/sbCnc"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:max="10"
+                        android:text="Adjusting automatically based on environment"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone"
                         android:layout_marginBottom="4dp" />
 
                     <LinearLayout
@@ -163,13 +221,23 @@
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
                         android:layout_marginBottom="12dp">
-                        <TextView
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Auto CNC"
-                            android:textAppearance="?attr/textAppearanceBodySmall"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto ANC"
+                                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Let the headphones choose the level"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/swAutoCnc"
                             android:layout_width="wrap_content"
@@ -211,8 +279,89 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ── Equalizer Card ────────────────────────────────────────── -->
+            <!-- ── Settings Card ─────────────────────────────────────────── -->
             <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Settings"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:layout_marginBottom="8dp" />
+
+
+                    <!-- Auto Play/Pause -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto Play/Pause"
+                                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Pause when headphones removed"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/swAutoPlayPause"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                    <!-- Auto Answer -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto Answer"
+                                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Answer calls automatically"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/swAutoAnswer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Equalizer Card ────────────────────────────────────────── -->            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -360,6 +509,15 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:visibility="gone" />
+
+                    <!-- Pairing Mode -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPairingMode"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Enter Pairing Mode" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

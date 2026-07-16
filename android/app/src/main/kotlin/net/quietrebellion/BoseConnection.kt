@@ -75,9 +75,41 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
         return QcUltra2.parseSource(get(fb, fn).payload)
     }
 
+
+
+    suspend fun autoPlayPause(): Boolean {
+        val (fb, fn) = QcUltra2.AutoPlayPause
+        val p = get(fb, fn).payload
+        return p.isNotEmpty() && p[0] != 0.toByte()
+    }
+
+    suspend fun autoAnswer(): Boolean {
+        val (fb, fn) = QcUltra2.AutoAnswer
+        val p = get(fb, fn).payload
+        return p.isNotEmpty() && p[0] != 0.toByte()
+    }
+
     suspend fun pairedDeviceMacs(): List<String> {
         val (fb, fn) = QcUltra2.PairedDevices
         return QcUltra2.parsePairedDevices(get(fb, fn).payload)
+    }
+
+    /** Returns paired MACs mapped to their device names (from 4.5 DeviceInfo). */
+    suspend fun pairedDevicesWithNames(): Map<String, String> {
+        val macs = pairedDeviceMacs()
+        val (fb, fn) = QcUltra2.DeviceInfo
+        val result = LinkedHashMap<String, String>()
+        for (mac in macs) {
+            val macBytes = mac.split(":").map { it.toInt(16).toByte() }.toByteArray()
+            val name = try {
+                val pkt = BmapProtocol.build(fb, fn, Op.GET, macBytes)
+                val raw = transport.sendRecv(pkt)
+                val resp = BmapProtocol.parse(raw)
+                if (resp != null && resp.op == Op.STATUS) QcUltra2.parseDeviceInfo(resp.payload) else null
+            } catch (_: Exception) { null }
+            result[mac] = name ?: mac
+        }
+        return result
     }
 
     /** Returns dict of mode index → display name (preset 0-3 + custom 4-10). */
@@ -97,6 +129,34 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
     }
 
     // ── Write operations ──────────────────────────────────────────────────────
+
+
+    suspend fun powerOff() {
+        val (fb, fn) = QcUltra2.Power
+        // ponytail: device disconnects immediately after power-off; no STATUS expected.
+        try { transport.sendRecv(BmapProtocol.build(fb, fn, Op.START, byteArrayOf(0x00))) }
+        catch (_: Exception) { /* expected – socket closes */ }
+    }
+
+
+    suspend fun setAutoPlayPause(enabled: Boolean) {
+        val (fb, fn) = QcUltra2.AutoPlayPause
+        val pkt = BmapProtocol.build(fb, fn, Op.SETGET, byteArrayOf(if (enabled) 1 else 0))
+        throwIfError(BmapProtocol.parse(transport.sendRecv(pkt)))
+    }
+
+    suspend fun setAutoAnswer(enabled: Boolean) {
+        val (fb, fn) = QcUltra2.AutoAnswer
+        val pkt = BmapProtocol.build(fb, fn, Op.SETGET, byteArrayOf(if (enabled) 1 else 0))
+        throwIfError(BmapProtocol.parse(transport.sendRecv(pkt)))
+    }
+
+    suspend fun enterPairingMode() {
+        val (fb, fn) = QcUltra2.Pairing
+        // ponytail: device enters pairing and typically disconnects – socket close is expected.
+        try { transport.sendRecv(BmapProtocol.build(fb, fn, Op.START, byteArrayOf(0x01))) }
+        catch (_: Exception) { }
+    }
 
     suspend fun setModeByIndex(index: Int) {
         val (fb, fn) = QcUltra2.CurrentMode

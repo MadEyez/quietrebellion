@@ -70,6 +70,19 @@ public static class QcUltra2
     //              source_type: 0=none, 1=bluetooth (6-byte MAC follows), 2=auxiliary
     public static readonly (byte fblock, byte func) Source = (5, 1);
 
+
+    // bmap: [1.24] GET/SETGET → [bool]  auto play/pause on ear removal
+    public static readonly (byte fblock, byte func) AutoPlayPause = (1, 24);
+
+    // bmap: [1.27] GET/SETGET → [bool]  auto-answer calls
+    public static readonly (byte fblock, byte func) AutoAnswer = (1, 27);
+
+    // bmap: [4.8]  GET → [00]=not pairing; START [0x01]=enter pairing mode
+    public static readonly (byte fblock, byte func) Pairing = (4, 8);
+
+    // bmap: [7.4]  START [0x00] → power off device
+    public static readonly (byte fblock, byte func) Power = (7, 4);
+
     // bmap: [1.10] GET  → payload[0] bit-1 (0x02) = multipoint enabled
     //              SETGET → [1] on / [0] off
     public static readonly (byte fblock, byte func) Multipoint = (1, 10);
@@ -78,16 +91,24 @@ public static class QcUltra2
     //              SETGET → [1, level]   (persist=1)
     public static readonly (byte fblock, byte func) Sidetone = (1, 11);
 
+    // bmap: [2.3]  GET → [0=not charging, 1=charging]
+    public static readonly (byte fblock, byte func) ChargingState = (2, 3);
+
+    // bmap: [31.8] GET    → [totalModes, 0x00, maskByte]  bit N = mode N is a favourite
+    //              SETGET → same 3-byte layout to write favourites bitmask
+    public static readonly (byte fblock, byte func) Favorites = (31, 8);
+
     // bmap: [31.10] GET    → [cnc_level, auto_cnc, spatial, wind_block, anc_toggle]
     //               SETGET → same 5-byte payload to write audio settings
     public static readonly (byte fblock, byte func) AudioSettings = (31, 10);
 
-    // ── Sidetone constants (from bosectl constants.py SIDETONE_NAMES) ─────────
+    // ── Sidetone constants ────────────────────────────────────────────────────
     public static readonly IReadOnlyDictionary<int, string> SidetoneNames =
         new Dictionary<int, string> { {0,"off"}, {1,"high"}, {2,"medium"}, {3,"low"} };
     public static readonly IReadOnlyDictionary<string, int> SidetoneByName =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         { {"off",0}, {"high",1}, {"medium",2}, {"med",2}, {"low",3} };
+
 
     // ── Preset Mode Index Map ─────────────────────────────────────────────────
     // Preset slots 0-3 are firmware-locked (SETGET rejected with Runtime error).
@@ -112,6 +133,17 @@ public static class QcUltra2
     // bmap: [31.6] STATUS (returned by drain after GetAllModes START [31.1])
     //       Each STATUS carries one mode's 48-byte configuration.
     public static readonly (byte fblock, byte func) ModeConfigStatus = (31, 6);
+
+    /// <summary>
+    /// Resolve a mode index to a display name.
+    /// 0xFF (255) = device left the saved mode (manual ANC/spatial change).
+    /// </summary>
+    public static string ModeDisplayName(int index, IReadOnlyDictionary<int, string>? names = null)
+    {
+        if (names is not null && names.TryGetValue(index, out var n)) return n;
+        if (ModeNames.TryGetValue(index, out n)) return n;
+        return index is 0xFF or 255 ? "Custom" : $"custom({index})";
+    }
 
     // ── Mode Config Parser (name only) ────────────────────────────────────────
 
@@ -272,7 +304,7 @@ public static class QcUltra2
     }
 
     /// <summary>
-    /// Build ROUTING START [4.12] payload.
+    /// <summary>Build ROUTING START [4.12] payload.
     /// Payload: [0x82, mac0…mac5]
     /// 0x82 = bit7 (UP direction) | bit1 (device slot) – from bosectl build_routing.
     /// </summary>
@@ -284,6 +316,37 @@ public static class QcUltra2
         payload[0] = 0x82;
         Array.Copy(macBytes, 0, payload, 1, 6);
         return payload;
+    }
+
+    /// <summary>
+    /// Parse charging-state GET [2.3] response.
+    /// Returns true=charging, false=not charging, null=unknown.
+    /// </summary>
+    public static bool? ParseChargingState(byte[] p) =>
+        p.Length > 0 ? p[0] != 0 : null;
+
+    /// <summary>
+    /// Parse Favorites GET [31.8] response.
+    /// Wire format: [totalModes, 0x00, maskByte]  – bit N = mode N is a favourite.
+    /// Returns (set of favourite mode indices, totalModes).
+    /// </summary>
+    // ponytail: mask fits in one byte → modes 0-7 only. Matches Android BuildFavorites ceiling.
+    public static (IReadOnlySet<int> favs, int totalModes) ParseFavorites(byte[] p)
+    {
+        if (p.Length < 3) return (new HashSet<int>(), 11);
+        int total = p[0];
+        int mask  = p[2];
+        var favs  = Enumerable.Range(0, 8).Where(i => (mask >> i & 1) == 1).ToHashSet();
+        return (favs, total > 0 ? total : 11);
+    }
+
+    /// <summary>
+    /// Build Favorites SETGET [31.8] payload: [totalModes, 0x00, maskByte].
+    /// </summary>
+    public static byte[] BuildFavorites(int totalModes, IReadOnlySet<int> favSet)
+    {
+        int mask = favSet.Aggregate(0, (acc, i) => acc | (1 << i));
+        return new byte[] { (byte)totalModes, 0, (byte)mask };
     }
 }
 
@@ -304,4 +367,5 @@ public sealed record EqBand(
     int MinVal,
     int MaxVal,
     int Current);
+
 

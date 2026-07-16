@@ -78,7 +78,7 @@ Packet: [31, 3, 0x05, 2, MODE_INDEX, VOICE_PROMPT]
 | [4.8]    | DevMgmt.PairingMode | **RESULT** | **0x01=enable, 0x00=disable** |
 | [4.12]   | DevMgmt.Routing | **RESULT** | **Switch active multipoint device** (see below) |
 | [5.1]    | AudioMgmt.Source | GET only | **Query active audio source** (see below) |
-| [5.3]    | AudioMgmt.Control | InvalidData | Needs payload — play/pause/skip (see AudioControlValue) |
+| [5.3]    | AudioMgmt.Control | **PROCESSING/RESULT** | **Play/pause/skip confirmed** — requires active A2DP stream (ERROR 06 without stream) |
 | [18.19]  | ValidatedDeviceIdentityKeypair | PROCESSING | Accepts public key for auth flow |
 
 #### AudioModes SETGET — Full Config Control (No Auth!)
@@ -219,6 +219,9 @@ GET response: 3× 4-byte groups [min, max, current, bandId]
 ```
 
 #### Voice Prompt Languages [1.3]
+> **Removed in current firmware.** [1.3] SETGET accepted but the feature is no longer
+> exposed by the device UI. Language IDs from earlier firmware (for reference):
+
 | ID | Language | ID | Language |
 |----|----------|----|-----------| 
 | 0  | UK English | 12 | Hebrew |
@@ -299,10 +302,11 @@ Supported actions: SwitchDevice, TrackBack, unknown(22), unknown(25)
 Raw: 80090e00094002
 ```
 
-**Note:** Button remapping via SETGET is confirmed to accept payloads (tested echo-back)
-but has not been tested with actual mode changes yet. The supported action bitmask
-indicates only a few actions are available for this button/event combo.
-To remap: `bose raw "01 09 02 03 80 09 08"` (Shortcut, long_press → SwitchDevice)
+**Note:** Button remapping via SETGET is **silently rejected** on QC Ultra 2 —
+SETGET returns a STATUS (echo) but the action does not change. Tested: setting
+SwitchDevice(8) and ModesCarousel(17) both echo back as Disabled(14). Actual
+remapping requires the SET operator (cloud ECDH auth, not implemented).
+`bose raw "01 09 02 03 80 09 08"` sends the SETGET packet but will not change the button.
 
 ## What Requires Authentication (Blocked)
 
@@ -314,7 +318,8 @@ Confirmed auth-blocked (SET/START only):
 - Settings.ProductName [1.2] — device name (SET blocked, SETGET untested)
 - Settings.Multipoint [1.10] — multipoint toggle
 - Settings.StandbyTimer [1.4] — auto-off timer
-- AudioManagement.Control [5.3] — play/pause/skip (SET/START blocked)
+- **Settings.Buttons [1.9]** — SETGET is accepted (STATUS echoed back) but action does **not** change; actual remapping requires SET (cloud auth). Read-only in practice.
+- **AudioModes.DefaultMode [31.4]** — GET returns no response (timeout, kills connection). Do not call.
 
 Confirmed SETGET works without auth:
 - Settings.EQ [1.7] — **full equalizer control** (-10 to +10, 3 bands)
@@ -388,7 +393,7 @@ Serial:  T5333020XXXXXXXXXXXXX
 | 1     | Settings          | 0,2,3,5,7,9,10,11,12,24,27 |
 | 2     | Status            | 0,2,5,16,21 |
 | 3     | FirmwareUpdate    | 0,1,4,6,7,15,16 |
-| 4     | DeviceManagement  | 0,1,4,8,9,14,18 |
+| 4     | DeviceManagement  | 0,1,4,5,8,9,14,18 |
 | 5     | AudioManagement   | 0,1,3,4,5,7,13,17 |
 | 6     | CallManagement    | 0 |
 | 7     | Control           | 0,1,4 |
@@ -513,33 +518,50 @@ ROUTING_TYPE enum: UP=1 (value << 7 = 0x80), DOWN=0.
 ### AudioManagement Control [5.3] — Transport Controls
 START operator with single-byte payload. Values from `AudioControlValue.java`:
 ```
-0x00  STOP
-0x01  PLAY
-0x02  PAUSE
-0x03  TRACK_FORWARD
-0x04  TRACK_BACK
-0x05  FAST_FORWARD_PRESS
-0x06  FAST_FORWARD_RELEASE
-0x07  REWIND_PRESS
-0x08  REWIND_RELEASE
+0x00  STOP          (not confirmed working)
+0x01  PLAY          ✅ confirmed (PROCESSING)
+0x02  PAUSE         ✅ confirmed (RESULT)
+0x03  TRACK_FORWARD ✅ confirmed (PROCESSING)
+0x04  TRACK_BACK    ✅ confirmed (PROCESSING)
+0x05  FAST_FORWARD_PRESS   (ERROR — not available on QC Ultra 2)
+0x06  FAST_FORWARD_RELEASE (ERROR)
+0x07  REWIND_PRESS         (ERROR)
+0x08  REWIND_RELEASE       (ERROR)
 ```
 
+**Requirement:** An active A2DP audio stream must be present. Without a stream,
+all commands return ERROR 06 (InvalidData). The capabilities bitmask from GET
+`[1f]` = bits 0–4 set = 5 supported operations (0x01–0x05).
+
+### AudioManagement MediaState [5.4]
+GET returns 3 bytes: `[state, ?, ?]`
+- `state = 0x01` → Playing
+- `state = 0x02` → Paused
+- `state = 0x00` → Stopped
+
+### AudioManagement MediaProgress [5.7]
+GET returns 6 bytes: `[00 00, dur_hi, dur_lo, pos_hi, pos_lo]`
+- `bytes[2-3]` = track duration in seconds (big-endian)
+- `bytes[4-5]` = current playback position in seconds (big-endian, increases while playing)
+
 ### DeviceManagement Functions (Block 4) — Full Map
-From `DeviceManagementPackets.java`:
+From `DeviceManagementPackets.java` + live probing:
 | Func | Name | Notes |
 |------|------|-------|
 | 0 | FblockInfo | |
-| 1 | Connect | Needs device MAC |
+| 1 | Connect | GET: `[00 00 03]` (static, likely capacity info). START: InvalidData with all payloads tested. |
 | 2 | Disconnect | |
 | 3 | RemoveDevice | |
-| 4 | ListDevices | Returns paired device list |
-| 5 | Info | Device info query |
+| 4 | ListDevices | Returns paired device list (MACs only) |
+| 5 | Info | Device name lookup: GET(mac) → `[mac(6), unk, unk, 0x03, name...]` |
 | 7 | ClearDeviceList | |
-| 8 | PairingMode | 0x01=enable, 0x00=disable |
-| 9 | LocalMacAddress | |
+| 8 | PairingMode | GET: `[00]`=not pairing. START `[0x01]`=enter pairing mode |
+| 9 | LocalMacAddress | GET: returns headphone's own BT MAC (6 bytes) |
 | 10 | PrepareP2P | |
 | 11 | P2PMode | |
-| 12 | Routing | Switch active multipoint device |
+| 12 | Routing | Switch active multipoint device (only when 2 A2DP connections active) |
+| 14 | Unknown | GET: `[01]` — static, does not change with connection count |
+| 18 | Unknown | GET: `[01]` — static, does not change with connection count |
 
 ## BMAP Error Codes
 | Code | Name             | Description |
@@ -654,13 +676,15 @@ of unauthenticated NC control on this firmware version.
 
 ## Future Work
 - ~~Crack ModeConfig SETGET payload format~~ **DONE** — full CNC/spatial/wind/ANC control
-- ~~Crack Settings SETGET~~ **DONE** — EQ, name, sidetone, multipoint, all work
-- ~~Implement button remapping [1.9]~~ **DONE** — SETGET works, verified on QC35 and QC Ultra 2
+- ~~Crack Settings SETGET~~ **DONE** — EQ, name, sidetone, multipoint, auto-pause, auto-answer all work (voice prompts removed in current FW)
+- ~~Implement button remapping [1.9]~~ **NOT POSSIBLE without auth** — SETGET accepted but silently ignored; actual remap requires SET (cloud ECDH). Read current mapping works.
 - ~~Try USB-C connection~~ **PARTIALLY DONE** — USB HID interface found, needs init handshake
+- ~~Reverse audio source/device routing~~ **DONE** — [5.1] source query, [4.12] routing START, [5.3] transport controls confirmed
+- ~~Implement [5.3] transport controls~~ **DONE** — play(0x01), pause(0x02), next(0x03), prev(0x04) confirmed with active stream
+- ~~Decode MediaState/MediaProgress~~ **DONE** — [5.4] playing/paused state, [5.7] position+duration in seconds
 - Crack USB BMAP initialization — capture USB traffic from app to find handshake sequence
 - Explore [31.9] AudioModes Reset — factory reset individual modes?
-- ~~Reverse audio source/device routing~~ **DONE** — [5.1] source query, [4.12] routing START, [5.3] transport controls
-- Implement [5.3] AudioManagement Control — play/pause/skip (payload format now known)
-- Build a system tray widget / PipeWire integration
 - Investigate firmware downgrade via bose-dfu over USB
 - Map the unknown bytes [40-41] in ModeConfig STATUS (mode-type specific config?)
+- Decode [4.14] and [4.18] — both return `[01]`, static, meaning unknown
+- Crack [31.4] DefaultMode — GET causes timeout (connection dies); format unknown
