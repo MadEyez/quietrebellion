@@ -23,13 +23,14 @@ jobs:
           dotnet-version: '7.0.x'
 
       - name: Publish single-file exe
+        # ponytail: framework-dependent keeps the exe at ~2 MB; ceiling = user needs .NET 7 Desktop Runtime.
+        # Upgrade path: MSIX with prerequisite bootstrapper, or switch to net8+ once Android side is ready.
         run: >
           dotnet publish csharp/BoseCtl/BoseCtl.csproj
           -c Release
           -r win-x64
-          --self-contained true
+          --self-contained false
           -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
           -o out
 
       - name: Rename exe
