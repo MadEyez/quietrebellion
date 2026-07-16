@@ -1,4 +1,4 @@
-# bosectl
+# Quiet Rebellion
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Upstream](https://img.shields.io/badge/upstream-aaronsb%2Fbosectl-blue)](https://github.com/aaronsb/bosectl)
@@ -11,6 +11,8 @@
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://kernel.org)
 
 **Control Bose headphones from Linux, Android, or Windows — no app, no cloud, no account.**
+
+> **CLI and library also known as `bosectl`** (upstream project name).
 
 > **Fork of [aaronsb/bosectl](https://github.com/aaronsb/bosectl).**  
 > This fork adds a native **Windows tray app and CLI** (`csharp/`) and an
@@ -82,12 +84,26 @@ See **[csharp/README.md](csharp/README.md)** for build, publish, and tray-app do
 
 ### Android (this fork)
 
+Features: ANC slider (0–10) + Auto-ANC, Spatial audio (Off/Room/Head), Wind Block,
+3-band EQ, Sidetone, Multipoint with device names, Listening mode selection
+(Quiet/Aware/Immersion/Cinema + custom slots), Favorites (long-press ★),
+Auto Play/Pause, Auto Answer, Device Rename, Power Off, Bluetooth Pairing Mode,
+Now Playing, persistent notification with quick controls.
+
 Build and install via Android Studio or:
 
 ```bash
+# Linux / macOS
 cd android
 ./gradlew assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+```powershell
+# Windows
+cd android
+.\gradlew assembleDebug
+adb install -r app\build\outputs\apk\debug\app-debug.apk
 ```
 
 See **[android/README.md](android/README.md)** for details.
@@ -159,12 +175,23 @@ pybmap.known_devices()       # full catalog
 
 ## Installation
 
-### Windows
+### From Release Binaries (this fork)
+
+Pre-built files are attached to each [GitHub Release](https://github.com/MadEyez/quietrebellion/releases/latest):
+
+| Platform | File | Notes |
+|---|---|---|
+| Windows | `bosectl.exe` | Self-contained — no .NET runtime needed |
+| Android | `app-release.apk` | Enable *Install from unknown sources* in Android settings |
+
+For Linux use the upstream binaries (see below) or build from source.
+
+### Windows — Build from Source
 
 ```powershell
 cd csharp\BoseCtl
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-# → bin\Release\...\win-x64\publish\bosectl.exe  (no .NET runtime needed)
+# → bin\Release\...\win-x64\publish\bosectl.exe
 ```
 
 Pair the headphones in Windows Bluetooth settings first. The Bose app must not be
@@ -282,4 +309,7 @@ make clean                      # Remove all build artifacts
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for full text.
+
+- **Upstream code** (`python/`, `rust/`, `cpp/`): © [aaronsb/bosectl](https://github.com/aaronsb/bosectl) contributors
+- **This fork** (`android/`, `csharp/`): © 2026 Aaron Bockelie
