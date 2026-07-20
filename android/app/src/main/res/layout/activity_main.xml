@@ -340,7 +340,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/str_auto_play_pause_desc"
-                                android:textAppearance="?attr:textAppearanceBodySmall"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -364,12 +364,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/str_auto_answer"
-                                android:textAppearance="?attr:textAppearanceBodyMedium" />
+                                android:textAppearance="?attr/textAppearanceBodyMedium" />
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/str_auto_answer_desc"
-                                android:textAppearance="?attr:textAppearanceBodySmall"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -418,7 +418,7 @@
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="@string/str_eq_bass" android:textAppearance="?attr:textAppearanceBodySmall"
+                                android:text="@string/str_eq_bass" android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvBassVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
@@ -431,7 +431,7 @@
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="@string/str_eq_mid" android:textAppearance="?attr:textAppearanceBodySmall"
+                                android:text="@string/str_eq_mid" android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvMidVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
@@ -444,7 +444,7 @@
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="@string/str_eq_treble" android:textAppearance="?attr:textAppearanceBodySmall"
+                                android:text="@string/str_eq_treble" android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvTrebleVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
@@ -468,7 +468,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/str_sidetone"
-                        android:textAppearance="?attr:textAppearanceBodyMedium" />
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
                     <RadioGroup
                         android:id="@+id/rgSidetone"
                         android:layout_width="match_parent"
@@ -500,7 +500,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/str_connection"
-                        android:textAppearance="?attr:textAppearanceLabelLarge"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:textColor="?attr/colorPrimary"
                         android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
@@ -515,7 +515,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/str_multipoint"
-                            android:textAppearance="?attr:textAppearanceBodyMedium" />
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/swMultipoint"
                             android:layout_width="wrap_content"
@@ -529,13 +529,13 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="@string/str_switch_audio_source"
-                        android:textAppearance="?attr:textAppearanceBodyMedium"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:visibility="gone" />
                     <TextView
                         android:id="@+id/tvActiveDevice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr:textAppearanceBodySmall"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
                     <TextView
@@ -543,7 +543,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/str_multipoint_hint"
-                        android:textAppearance="?attr:textAppearanceBodySmall"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
                     <RadioGroup
