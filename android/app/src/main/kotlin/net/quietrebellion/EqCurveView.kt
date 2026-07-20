@@ -66,7 +66,7 @@ class EqCurveView @JvmOverloads constructor(
     private val TR  = 52f
     private var drag = -1
 
-    private fun xAt(i: Int) = width * (i + 1) / 4f
+    private fun xAt(i: Int) = width * (i * 2 + 1) / 6f
 
     private fun yAt(i: Int): Float {
         val norm = (values[i] - mins[i]).toFloat() / (maxs[i] - mins[i])
@@ -92,30 +92,42 @@ class EqCurveView @JvmOverloads constructor(
         // Zero baseline
         canvas.drawLine(0f, yZeroFor(0), w, yZeroFor(0), zeroLinePaint)
 
-        // Fan lines per band – one per dB step, only where value ≠ 0
-        // bass → [0, xAt(0)], mid → [xAt(0), xAt(2)], treble → [xAt(2), w]
-        val zones = arrayOf(0f to xAt(0), xAt(0) to xAt(2), xAt(2) to w)
-        for (i in 0..2) {
-            val v = values[i]; if (v == 0) continue
-            val steps = abs(v)
-            val yz = yZeroFor(i)
-            val (xL, xR) = zones[i]
-            for (j in 1..steps) {
-                val yLine = yz + j.toFloat() / steps * (p[i].y - yz)
-                canvas.drawLine(xL, yLine, xR, yLine, fanPaint)
+        // Shadow curves – copies of the Bezier interpolated from zero toward the main curve,
+        // one per dB step. Symmetric range → yZero is identical for all three bands.
+        val maxSteps = values.map { abs(it) }.maxOrNull() ?: 0
+        if (maxSteps > 0) {
+            val yZ = yZeroFor(0)
+            for (j in 1 until maxSteps) {
+                val t = j.toFloat() / maxSteps
+                val sp = Array(3) { i -> PointF(p[i].x, yZ + t * (p[i].y - yZ)) }
+                val stx = floatArrayOf(sp[1].x - sp[0].x, (sp[2].x - sp[0].x) / 2f, sp[2].x - sp[1].x)
+                val sty = floatArrayOf(sp[1].y - sp[0].y, (sp[2].y - sp[0].y) / 2f, sp[2].y - sp[1].y)
+                val shadow = Path().apply {
+                    moveTo(0f, sp[0].y)
+                    lineTo(sp[0].x, sp[0].y)
+                    for (seg in 0..1) cubicTo(
+                        sp[seg].x   + stx[seg]   / 3f, sp[seg].y   + sty[seg]   / 3f,
+                        sp[seg+1].x - stx[seg+1] / 3f, sp[seg+1].y - sty[seg+1] / 3f,
+                        sp[seg+1].x, sp[seg+1].y,
+                    )
+                    lineTo(w, sp[2].y)
+                }
+                canvas.drawPath(shadow, fanPaint)
             }
         }
 
-        // EQ curve (Catmull-Rom)
+        // EQ curve (Catmull-Rom) – extends flat to both edges
         val tx = floatArrayOf(p[1].x - p[0].x, (p[2].x - p[0].x) / 2f, p[2].x - p[1].x)
         val ty = floatArrayOf(p[1].y - p[0].y, (p[2].y - p[0].y) / 2f, p[2].y - p[1].y)
         val path = Path().apply {
-            moveTo(p[0].x, p[0].y)
+            moveTo(0f, p[0].y)
+            lineTo(p[0].x, p[0].y)
             for (seg in 0..1) cubicTo(
                 p[seg].x   + tx[seg]   / 3f, p[seg].y   + ty[seg]   / 3f,
                 p[seg+1].x - tx[seg+1] / 3f, p[seg+1].y - ty[seg+1] / 3f,
                 p[seg+1].x, p[seg+1].y,
             )
+            lineTo(w, p[2].y)
         }
         canvas.drawPath(path, curvePaint)
 

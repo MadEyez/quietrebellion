@@ -19,7 +19,7 @@
 > **Android app** (`android/`) on top of the original Linux Python/Rust/C++ libraries.  
 > All upstream protocol work, device catalog, and library code is unchanged.
 >
-> ⚠️ **Windows and Android ports are pre-alpha.** Core features work, but expect
+> ⚠️ **Windows and Android ports are beta.** Core features work well; expect occasional
 > rough edges. For stable, well-tested control use the Python or Rust CLI on Linux.
 
 ![bosectl CLI](docs/media/screenshot.png)
@@ -65,7 +65,13 @@ See [Adding a New Device](docs/architecture.md#adding-a-new-device).
 
 ### Windows (this fork)
 
-System tray app — launch and forget:
+System tray app — launch and forget. Auto-detects paired QC Ultra 2 headphones.
+
+Tray features: ANC slider (0–10) + Auto-ANC, Wind Block, Spatial audio,
+3-band EQ, Sidetone, Listening modes (with custom slots + Favourites ★),
+Multipoint on/off, device switching with names from headphone memory,
+Now Playing source in tooltip, Auto Play/Pause, Auto-answer, Device Rename,
+Power Off, Bluetooth Pairing Mode.
 
 ```powershell
 cd csharp\BoseCtl
@@ -88,7 +94,8 @@ Features: ANC slider (0–10) + Auto-ANC, Spatial audio (Off/Room/Head), Wind Bl
 3-band EQ, Sidetone, Multipoint with device names, Listening mode selection
 (Quiet/Aware/Immersion/Cinema + custom slots), Favorites (long-press ★),
 Auto Play/Pause, Auto Answer, Device Rename, Power Off, Bluetooth Pairing Mode,
-Now Playing, persistent notification with quick controls.
+Now Playing, persistent notification with quick controls.  
+Two built-in themes (Fresh & Clean / Monochrome, Light/Dark) + Material You (Android 12+).
 
 Build and install via Android Studio or:
 

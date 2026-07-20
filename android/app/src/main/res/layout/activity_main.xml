@@ -7,7 +7,9 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="?android:attr/colorBackground"
+        app:elevation="0dp">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -24,14 +26,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="16dp">
 
             <!-- ── Status Card ───────────────────────────────────────────── -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -42,7 +46,7 @@
                         android:id="@+id/tvDeviceName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Searching…"
+                        android:text="@string/str_searching"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <LinearLayout
@@ -91,27 +95,30 @@
                         android:layout_marginTop="12dp">
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnReconnect"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/Widget.Material3.Button"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="2"
                             android:layout_marginEnd="8dp"
-                            android:text="Reconnect" />
+                            android:maxLines="1"
+                            android:text="@string/str_reconnect" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnRename"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="2"
                             android:layout_marginEnd="8dp"
-                            android:text="Rename…" />
+                            android:maxLines="1"
+                            android:text="@string/str_rename" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnPowerOff"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Off" />
+                            android:maxLines="1"
+                            android:text="@string/str_power_off_btn" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -121,7 +128,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -131,8 +140,10 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Listening Mode"
+                        android:text="@string/str_listening_mode"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"
+                        android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
                     <RadioGroup
@@ -149,7 +160,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -159,8 +172,10 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Noise Control"
+                        android:text="@string/str_noise_control"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"
+                        android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
                     <!-- Manual ANC controls (hidden when Auto ANC is on) -->
@@ -174,8 +189,9 @@
                             android:id="@+id/tvCncLevel"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="ANC: 0"
-                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                            android:text="@string/str_noise_control"
+                            android:textAppearance="@style/TextAppearance.QuietRebellion.MonoLabel"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                         <SeekBar
                             android:id="@+id/sbCnc"
                             android:layout_width="match_parent"
@@ -190,14 +206,14 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="◀ Aware"
+                                android:text="@string/str_anc_aware_label"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="ANC ▶"
+                                android:text="@string/str_anc_anc_label"
                                 android:gravity="end"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
@@ -209,7 +225,7 @@
                         android:id="@+id/tvAutoCncStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Adjusting automatically based on environment"
+                        android:text="@string/str_auto_anc_status"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone"
@@ -229,12 +245,12 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Auto ANC"
+                                android:text="@string/str_auto_anc"
                                 android:textAppearance="?attr/textAppearanceBodyMedium" />
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Let the headphones choose the level"
+                                android:text="@string/str_auto_anc_desc"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
@@ -247,7 +263,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Spatial Audio"
+                        android:text="@string/str_spatial_audio"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
                     <RadioGroup
                         android:id="@+id/rgSpatial"
@@ -255,9 +271,9 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:layout_marginBottom="12dp">
-                        <RadioButton android:id="@+id/rbSpatialOff"  android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Off" />
-                        <RadioButton android:id="@+id/rbSpatialRoom" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Room" />
-                        <RadioButton android:id="@+id/rbSpatialHead" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Head" />
+                        <RadioButton android:id="@+id/rbSpatialOff"  android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_spatial_off" />
+                        <RadioButton android:id="@+id/rbSpatialRoom" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_spatial_room" />
+                        <RadioButton android:id="@+id/rbSpatialHead" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_spatial_head" />
                     </RadioGroup>
 
                     <LinearLayout
@@ -269,7 +285,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Wind Block"
+                            android:text="@string/str_wind_block"
                             android:textAppearance="?attr/textAppearanceBodyMedium" />
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/swWindBlock"
@@ -284,7 +300,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -294,8 +312,10 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Settings"
+                        android:text="@string/str_settings"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"
+                        android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
 
@@ -314,13 +334,13 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Auto Play/Pause"
+                                android:text="@string/str_auto_play_pause"
                                 android:textAppearance="?attr/textAppearanceBodyMedium" />
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Pause when headphones removed"
-                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:text="@string/str_auto_play_pause_desc"
+                                android:textAppearance="?attr:textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -343,13 +363,13 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Auto Answer"
-                                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                                android:text="@string/str_auto_answer"
+                                android:textAppearance="?attr:textAppearanceBodyMedium" />
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Answer calls automatically"
-                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:text="@string/str_auto_answer_desc"
+                                android:textAppearance="?attr:textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -365,7 +385,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -375,70 +397,87 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Equalizer"
+                        android:text="@string/str_equalizer"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"
+                        android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
-                    <!-- EQ band labels: name (small) + value (large), stacked -->
+                    <!--
+                        Labels aligned to dot x-positions (1/6, 3/6, 5/6 of width).
+                        Spacer scheme 1:2:2:1 → centers at ~17%, 50%, ~83%.
+                    -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:layout_marginBottom="4dp">
 
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Bass" android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:text="@string/str_eq_bass" android:textAppearance="?attr:textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvBassVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
-                                android:textAppearance="?attr/textAppearanceTitleMedium" />
+                                android:textAppearance="@style/TextAppearance.QuietRebellion.MonoValue"
+                                android:textColor="?attr/colorPrimary" />
                         </LinearLayout>
 
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="2"/>
+
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Mid" android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:text="@string/str_eq_mid" android:textAppearance="?attr:textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvMidVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
-                                android:textAppearance="?attr/textAppearanceTitleMedium" />
+                                android:textAppearance="@style/TextAppearance.QuietRebellion.MonoValue"
+                                android:textColor="?attr/colorPrimary" />
                         </LinearLayout>
 
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="2"/>
+
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:orientation="vertical" android:gravity="center">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Treble" android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:text="@string/str_eq_treble" android:textAppearance="?attr:textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                             <TextView android:id="@+id/tvTrebleVal" android:layout_width="wrap_content"
                                 android:layout_height="wrap_content" android:text="0"
-                                android:textAppearance="?attr/textAppearanceTitleMedium" />
+                                android:textAppearance="@style/TextAppearance.QuietRebellion.MonoValue"
+                                android:textColor="?attr/colorPrimary" />
                         </LinearLayout>
+
+                        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
                     </LinearLayout>
 
-                    <!-- Graphic EQ curve -->
+                    <!-- Graphic EQ curve – dots sit at x = w*1/4, w*2/4, w*3/4 -->
                     <net.quietrebellion.EqCurveView
                         android:id="@+id/eqCurveView"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="180dp"
                         android:layout_marginBottom="12dp" />
+
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Sidetone"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+                        android:text="@string/str_sidetone"
+                        android:textAppearance="?attr:textAppearanceBodyMedium" />
                     <RadioGroup
                         android:id="@+id/rgSidetone"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
-                        <RadioButton android:id="@+id/rbSidetoneOff"    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Off" />
-                        <RadioButton android:id="@+id/rbSidetoneHigh"   android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="High" />
-                        <RadioButton android:id="@+id/rbSidetoneMedium" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Med" />
-                        <RadioButton android:id="@+id/rbSidetoneLow"    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Low" />
+                        <RadioButton android:id="@+id/rbSidetoneOff"    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_sidetone_off" />
+                        <RadioButton android:id="@+id/rbSidetoneHigh"   android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_sidetone_high" />
+                        <RadioButton android:id="@+id/rbSidetoneMedium" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_sidetone_med" />
+                        <RadioButton android:id="@+id/rbSidetoneLow"    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/str_sidetone_low" />
                     </RadioGroup>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -448,7 +487,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -458,8 +499,10 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Connection"
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:text="@string/str_connection"
+                        android:textAppearance="?attr:textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"
+                        android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
                     <LinearLayout
@@ -471,8 +514,8 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Multipoint"
-                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                            android:text="@string/str_multipoint"
+                            android:textAppearance="?attr:textAppearanceBodyMedium" />
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/swMultipoint"
                             android:layout_width="wrap_content"
@@ -485,22 +528,22 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Switch Audio Source"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:text="@string/str_switch_audio_source"
+                        android:textAppearance="?attr:textAppearanceBodyMedium"
                         android:visibility="gone" />
                     <TextView
                         android:id="@+id/tvActiveDevice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textAppearance="?attr:textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
                     <TextView
                         android:id="@+id/tvPairedDevicesHint"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="The target device must also be actively connected."
-                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:text="@string/str_multipoint_hint"
+                        android:textAppearance="?attr:textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
                     <RadioGroup
@@ -513,11 +556,11 @@
                     <!-- Pairing Mode -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPairingMode"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Enter Pairing Mode" />
+                        android:text="@string/str_enter_pairing_mode_btn" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

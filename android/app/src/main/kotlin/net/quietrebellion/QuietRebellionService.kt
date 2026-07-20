@@ -162,7 +162,7 @@ class QuietRebellionService : Service() {
         mgr.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel_name),
                 NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Quiet Rebellion device status"
+                description = getString(R.string.notif_channel_desc)
                 setShowBadge(false)
             }
         )
@@ -196,7 +196,7 @@ class QuietRebellionService : Service() {
             getString(R.string.notif_title_disconnected)
 
         // Subtitle: source device + current mode + ANC state
-        val ancState = if (ancEnabled) "ANC on" else "ANC off"
+        val ancState = if (ancEnabled) getString(R.string.str_anc_on) else getString(R.string.str_anc_off)
         val text = listOfNotNull(
             sourceName.ifEmpty { null },
             modeName.ifEmpty { null },
@@ -212,7 +212,7 @@ class QuietRebellionService : Service() {
             if (keys.isEmpty()) -1
             else keys[(keys.indexOf(modeIndex) + 1) % keys.size]
         }
-        val nextModeName = if (nextModeIdx >= 0) QcUltra2.modeDisplayName(nextModeIdx, modeNames) else "Mode"
+        val nextModeName = if (nextModeIdx >= 0) QcUltra2.modeDisplayName(nextModeIdx, modeNames) else getString(R.string.str_mode_fallback)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -222,9 +222,9 @@ class QuietRebellionService : Service() {
             .setOngoing(true)
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(0, if (ancEnabled) "ANC Off" else "ANC On", ancIntent)
-            .addAction(0, "Switch to [$nextModeName]", modeIntent)
-            .addAction(0, "Power Off", powerIntent)
+            .addAction(0, if (ancEnabled) getString(R.string.str_notif_anc_off_action) else getString(R.string.str_notif_anc_on_action), ancIntent)
+            .addAction(0, getString(R.string.str_notif_switch_mode, nextModeName), modeIntent)
+            .addAction(0, getString(R.string.str_notif_power_off), powerIntent)
             .build()
     }
 

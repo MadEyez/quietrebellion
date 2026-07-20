@@ -2,9 +2,9 @@
      Equalizer-Kurve exakt aus der Vorlage übernommen, Farben auf Light Theme angepasst.
 
      Palette:
-       bg (via ic_launcher_background) #F4F4F5  Zinc-50 (kühles Hellgrau)
+       bg (via ic_launcher_background) #CCEFF5 / #0D2640  (Hell/Dunkel Cyan-Theme)
        curve  #71717A  Zinc-500        (gedämpfte Equalizer-Kurve = Bose-Status-quo)
-       peak   #7C3AED  Violet-700      (der Rebellion-Spike = diese App)
+       peak   #06B6D4  Cyan            (der Rebellion-Spike = diese App)
 
      Story: normaler EQ-Verlauf links und rechts (Bose, langweilig) –
             ein knalliger Violett-Peak in der Mitte (die Rebellion). -->
@@ -26,7 +26,7 @@
     <!-- ── Mitte: Violett-Peak (die Rebellion) ───────────────────────────── -->
     <path
         android:pathData="M46 54 C48 45 48.5 29 55 29 C62.5 29 60 80 68 80"
-        android:strokeColor="#7C3AED"
+        android:strokeColor="#06B6D4"
         android:strokeWidth="6.4"
         android:fillColor="@android:color/transparent"
         android:strokeLineCap="round"

@@ -31,6 +31,11 @@ Bose QuietComfort Ultra Headphones (2nd Gen) — codename "wolverine"
 - Device rename
 - Power off
 
+<b>Appearance</b>
+- Two built-in themes: Fresh &amp; Clean (cyan) and Monochrome, each in Light and Dark
+- Material You (Android 12+): colours follow your wallpaper
+- Tap the settings icon (top right) to switch themes
+
 <b>System Integration</b>
 - Persistent foreground notification — connection stays alive when the app is in the background
 - Notification actions: ANC toggle · Switch to [next mode] · Power Off

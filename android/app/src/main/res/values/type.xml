@@ -1,0 +1,55 @@
+<resources>
+
+    <!--
+        Card-Section-Titles: wie im Mockup – klein, uppercase, letter-spaced, Bold
+        Mockup: 11px · weight 700 · letter-spacing 0.08em · text-transform uppercase
+    -->
+    <style name="TextAppearance.QuietRebellion.CardTitle" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontWeight">700</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!--
+        EQ-Werte + ANC-Level: DM Mono wie im Mockup
+        Mockup: DM Mono · 20px · weight 500 (EQ), 11px (ANC label)
+    -->
+    <style name="TextAppearance.QuietRebellion.MonoValue" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/dm_mono</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:fontWeight">500</item>
+    </style>
+
+    <style name="TextAppearance.QuietRebellion.MonoLabel" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/dm_mono</item>
+    </style>
+
+    <!-- Toolbar-Titel: DM Sans Bold, leicht enger -->
+    <style name="TextAppearance.QuietRebellion.ToolbarTitle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontWeight">700</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <style name="Widget.QuietRebellion.Toolbar.Cyan.Light" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.QuietRebellion.ToolbarTitle</item>
+        <item name="titleTextColor">#052E38</item>
+    </style>
+    <style name="Widget.QuietRebellion.Toolbar.Cyan.Dark" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.QuietRebellion.ToolbarTitle</item>
+        <item name="titleTextColor">#E0F4FC</item>
+    </style>
+    <style name="Widget.QuietRebellion.Toolbar.Mono.Light" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.QuietRebellion.ToolbarTitle</item>
+        <item name="titleTextColor">#111110</item>
+    </style>
+    <style name="Widget.QuietRebellion.Toolbar.Mono.Dark" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.QuietRebellion.ToolbarTitle</item>
+        <item name="titleTextColor">#EEEEED</item>
+    </style>
+
+</resources>

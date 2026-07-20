@@ -24,6 +24,14 @@ Auto-answer calls
 Power Off
 Enter Bluetooth Pairing Mode
 
+### What's new in 0.3
+
+- Two built-in themes: Fresh & Clean (cyan) and Monochrome, each in Light and Dark
+- Material You (Android 12+): colours follow your wallpaper
+- Theme picker: tap the settings icon (top right) to open a bottom sheet with colour previews
+- DM Sans variable font throughout; EQ curve and band labels polished
+
+
 ### What's new in 0.2
 - ANC slider: higher = more noise cancellation (inverted from 0.1)
 - Manual ANC changes outside a saved mode show as "Custom"

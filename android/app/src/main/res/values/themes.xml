@@ -1,41 +1,163 @@
 <resources>
-    <style name="Theme.QuietRebellion" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary -->
-        <item name="colorPrimary">@color/color_primary</item>
-        <item name="colorOnPrimary">@color/color_on_primary</item>
-        <item name="colorPrimaryContainer">@color/color_primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/color_on_primary_container</item>
-        <item name="colorInversePrimary">@color/color_inverse_primary</item>
 
-        <!-- Secondary -->
-        <item name="colorSecondary">@color/color_secondary</item>
-        <item name="colorOnSecondary">@color/color_on_secondary</item>
-        <item name="colorSecondaryContainer">@color/color_secondary_container</item>
-        <item name="colorOnSecondaryContainer">@color/color_on_secondary_container</item>
-
-        <!-- Tertiary -->
-        <item name="colorTertiary">@color/color_tertiary</item>
-        <item name="colorOnTertiary">@color/color_on_tertiary</item>
-        <item name="colorTertiaryContainer">@color/color_tertiary_container</item>
-        <item name="colorOnTertiaryContainer">@color/color_on_tertiary_container</item>
-
-        <!-- Error -->
-        <item name="colorError">@color/color_error</item>
-        <item name="colorOnError">@color/color_on_error</item>
-        <item name="colorErrorContainer">@color/color_error_container</item>
-        <item name="colorOnErrorContainer">@color/color_on_error_container</item>
-
-        <!-- Background / Surface -->
-        <item name="android:colorBackground">@color/color_background</item>
-        <item name="colorSurface">@color/color_surface</item>
-        <item name="colorOnSurface">@color/color_on_surface</item>
-        <item name="colorSurfaceVariant">@color/color_surface_variant</item>
-        <item name="colorOnSurfaceVariant">@color/color_on_surface_variant</item>
-        <item name="colorInverseSurface">@color/color_inverse_surface</item>
-        <item name="colorInverseOnSurface">@color/color_inverse_on_surface</item>
-
-        <!-- Outline -->
-        <item name="colorOutline">@color/color_outline</item>
-        <item name="colorOutlineVariant">@color/color_outline_variant</item>
+    <!-- ══ Fresh & Clean (Cyan) – Light ══ -->
+    <style name="Theme.QuietRebellion.Cyan.Light" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Fonts -->
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="fontFamily">@font/dm_sans</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.QuietRebellion.CardTitle</item>
+        <item name="toolbarStyle">@style/Widget.QuietRebellion.Toolbar.Cyan.Light</item>
+        <item name="colorPrimary">#06B6D4</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#CCEFF5</item>
+        <item name="colorOnPrimaryContainer">#052E38</item>
+        <item name="colorInversePrimary">#06B6D4</item>
+        <item name="colorSecondary">#5BAAB8</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#CCEFF5</item>
+        <item name="colorOnSecondaryContainer">#06B6D4</item>
+        <item name="colorTertiary">#84B8C2</item>
+        <item name="colorOnTertiary">#FFFFFF</item>
+        <item name="colorTertiaryContainer">#E8F6F9</item>
+        <item name="colorOnTertiaryContainer">#052E38</item>
+        <item name="colorError">#BA1A1A</item>
+        <item name="colorOnError">#FFFFFF</item>
+        <item name="colorErrorContainer">#FFDAD6</item>
+        <item name="colorOnErrorContainer">#93000A</item>
+        <item name="android:colorBackground">#F0FAFA</item>
+        <item name="colorSurface">#FFFFFF</item>
+        <item name="colorOnSurface">#052E38</item>
+        <item name="colorSurfaceVariant">#CCE8EF</item>
+        <item name="colorOnSurfaceVariant">#84B8C2</item>
+        <item name="colorSurfaceContainerLowest">#F0FAFA</item>
+        <item name="colorSurfaceContainerLow">#FFFFFF</item>
+        <item name="colorSurfaceContainer">#E8F6F9</item>
+        <item name="colorSurfaceContainerHigh">#D8F0F4</item>
+        <item name="colorSurfaceContainerHighest">#CCEFF5</item>
+        <item name="colorInverseSurface">#052E38</item>
+        <item name="colorInverseOnSurface">#F0FAFA</item>
+        <item name="colorOutline">#84B8C2</item>
+        <item name="colorOutlineVariant">#D8F0F4</item>
     </style>
+
+    <!-- ══ Fresh & Clean (Cyan) – Dark ══ -->
+    <style name="Theme.QuietRebellion.Cyan.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Fonts -->
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="fontFamily">@font/dm_sans</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.QuietRebellion.CardTitle</item>
+        <item name="toolbarStyle">@style/Widget.QuietRebellion.Toolbar.Cyan.Dark</item>
+        <item name="colorPrimary">#06B6D4</item>
+        <item name="colorOnPrimary">#001A2C</item>
+        <item name="colorPrimaryContainer">#0D2640</item>
+        <item name="colorOnPrimaryContainer">#A8D8EE</item>
+        <item name="colorInversePrimary">#06B6D4</item>
+        <item name="colorSecondary">#3A7A9C</item>
+        <item name="colorOnSecondary">#001A2C</item>
+        <item name="colorSecondaryContainer">#0D2640</item>
+        <item name="colorOnSecondaryContainer">#3A7A9C</item>
+        <item name="colorTertiary">#2A5A7A</item>
+        <item name="colorOnTertiary">#E0F4FC</item>
+        <item name="colorTertiaryContainer">#0F2D48</item>
+        <item name="colorOnTertiaryContainer">#A8D8EE</item>
+        <item name="colorError">#FFB4AB</item>
+        <item name="colorOnError">#690005</item>
+        <item name="colorErrorContainer">#93000A</item>
+        <item name="colorOnErrorContainer">#FFDAD6</item>
+        <item name="android:colorBackground">#0A1929</item>
+        <item name="colorSurface">#0D2136</item>
+        <item name="colorOnSurface">#E0F4FC</item>
+        <item name="colorSurfaceVariant">#0D2640</item>
+        <item name="colorOnSurfaceVariant">#3A7A9C</item>
+        <item name="colorSurfaceContainerLowest">#070F1A</item>
+        <item name="colorSurfaceContainerLow">#0D2136</item>
+        <item name="colorSurfaceContainer">#0F2540</item>
+        <item name="colorSurfaceContainerHigh">#0F2D48</item>
+        <item name="colorSurfaceContainerHighest">#143356</item>
+        <item name="colorInverseSurface">#E0F4FC</item>
+        <item name="colorInverseOnSurface">#0A1929</item>
+        <item name="colorOutline">#2A5A7A</item>
+        <item name="colorOutlineVariant">#0F2D48</item>
+    </style>
+
+    <!-- ══ Monochrom – Light ══ -->
+    <style name="Theme.QuietRebellion.Mono.Light" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Fonts -->
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="fontFamily">@font/dm_sans</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.QuietRebellion.CardTitle</item>
+        <item name="toolbarStyle">@style/Widget.QuietRebellion.Toolbar.Mono.Light</item>
+        <item name="colorPrimary">#06B6D4</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#E6E6E3</item>
+        <item name="colorOnPrimaryContainer">#111110</item>
+        <item name="colorInversePrimary">#06B6D4</item>
+        <item name="colorSecondary">#777777</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#E6E6E3</item>
+        <item name="colorOnSecondaryContainer">#444444</item>
+        <item name="colorTertiary">#ABABAB</item>
+        <item name="colorOnTertiary">#FFFFFF</item>
+        <item name="colorTertiaryContainer">#DCDCDA</item>
+        <item name="colorOnTertiaryContainer">#111110</item>
+        <item name="colorError">#BA1A1A</item>
+        <item name="colorOnError">#FFFFFF</item>
+        <item name="colorErrorContainer">#FFDAD6</item>
+        <item name="colorOnErrorContainer">#93000A</item>
+        <item name="android:colorBackground">#F2F2F0</item>
+        <item name="colorSurface">#FAFAF8</item>
+        <item name="colorOnSurface">#111110</item>
+        <item name="colorSurfaceVariant">#DCDCDA</item>
+        <item name="colorOnSurfaceVariant">#777777</item>
+        <item name="colorSurfaceContainerLowest">#F2F2F0</item>
+        <item name="colorSurfaceContainerLow">#FAFAF8</item>
+        <item name="colorSurfaceContainer">#F4F4F2</item>
+        <item name="colorSurfaceContainerHigh">#EBEBEA</item>
+        <item name="colorSurfaceContainerHighest">#E6E6E3</item>
+        <item name="colorInverseSurface">#111110</item>
+        <item name="colorInverseOnSurface">#F2F2F0</item>
+        <item name="colorOutline">#ABABAB</item>
+        <item name="colorOutlineVariant">#E8E8E5</item>
+    </style>
+
+    <!-- ══ Monochrom – Dark ══ -->
+    <style name="Theme.QuietRebellion.Mono.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Fonts -->
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="fontFamily">@font/dm_sans</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.QuietRebellion.CardTitle</item>
+        <item name="toolbarStyle">@style/Widget.QuietRebellion.Toolbar.Mono.Dark</item>
+        <item name="colorPrimary">#06B6D4</item>
+        <item name="colorOnPrimary">#0A1A1E</item>
+        <item name="colorPrimaryContainer">#252525</item>
+        <item name="colorOnPrimaryContainer">#EEEEED</item>
+        <item name="colorInversePrimary">#06B6D4</item>
+        <item name="colorSecondary">#888888</item>
+        <item name="colorOnSecondary">#0A1A1E</item>
+        <item name="colorSecondaryContainer">#2A2A2A</item>
+        <item name="colorOnSecondaryContainer">#999999</item>
+        <item name="colorTertiary">#555555</item>
+        <item name="colorOnTertiary">#EEEEED</item>
+        <item name="colorTertiaryContainer">#2C2C2C</item>
+        <item name="colorOnTertiaryContainer">#EEEEED</item>
+        <item name="colorError">#FFB4AB</item>
+        <item name="colorOnError">#690005</item>
+        <item name="colorErrorContainer">#93000A</item>
+        <item name="colorOnErrorContainer">#FFDAD6</item>
+        <item name="android:colorBackground">#1A1A1A</item>
+        <item name="colorSurface">#222222</item>
+        <item name="colorOnSurface">#EEEEED</item>
+        <item name="colorSurfaceVariant">#2C2C2C</item>
+        <item name="colorOnSurfaceVariant">#888888</item>
+        <item name="colorSurfaceContainerLowest">#141414</item>
+        <item name="colorSurfaceContainerLow">#222222</item>
+        <item name="colorSurfaceContainer">#282828</item>
+        <item name="colorSurfaceContainerHigh">#2C2C2C</item>
+        <item name="colorSurfaceContainerHighest">#333333</item>
+        <item name="colorInverseSurface">#EEEEED</item>
+        <item name="colorInverseOnSurface">#1A1A1A</item>
+        <item name="colorOutline">#555555</item>
+        <item name="colorOutlineVariant">#2C2C2C</item>
+    </style>
+
 </resources>

@@ -13,18 +13,26 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.color.DynamicColors
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -93,14 +101,15 @@ class MainActivity : AppCompatActivity() {
         val btGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             grants.getOrDefault(Manifest.permission.BLUETOOTH_CONNECT, true)
         if (btGranted) startAndBindService()
-        else setStatus("Bluetooth permission required")
+        else setStatus(getString(R.string.str_bt_permission_required))
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        applyThemePref()
+        applyNightModePref()
         super.onCreate(savedInstanceState)
+        applyDynamicColorsPref()
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
         setSupportActionBar(b.toolbar)
@@ -152,32 +161,131 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    // ── Theme toggle ──────────────────────────────────────────────────────────
+    // ── Theme / Appearance ────────────────────────────────────────────────────
 
-    private fun applyThemePref() {
-        val mode = getSharedPreferences("prefs", MODE_PRIVATE)
-            .getInt("night_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        AppCompatDelegate.setDefaultNightMode(mode)
+    /** Called before super.onCreate() – sets night mode so DayNight themes switch correctly. */
+    private fun applyNightModePref() {
+        val prefs = getSharedPreferences("prefs", MODE_PRIVATE)
+        // Migrate old boolean pref
+        val theme = if (prefs.contains("material_you") && !prefs.contains("theme")) {
+            val v = if (prefs.getBoolean("material_you", false)) "material_you" else "cyan_light"
+            prefs.edit().putString("theme", v).remove("material_you").apply()
+            v
+        } else prefs.getString("theme", "cyan_light")
+
+        when (theme) {
+            "cyan_light", "mono_light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            "cyan_dark",  "mono_dark"  -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }
     }
 
-    private fun toggleTheme() {
-        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-        val newMode = if (isDark) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
-        getSharedPreferences("prefs", MODE_PRIVATE).edit().putInt("night_mode", newMode).apply()
-        AppCompatDelegate.setDefaultNightMode(newMode)
-        recreate()
+    /** Called after super.onCreate(), before setContentView – applies the custom theme/DynamicColors. */
+    private fun applyDynamicColorsPref() {
+        val prefs = getSharedPreferences("prefs", MODE_PRIVATE)
+        when (prefs.getString("theme", "cyan_light")) {
+            "cyan_light"   -> setTheme(R.style.Theme_QuietRebellion_Cyan_Light)
+            "cyan_dark"    -> setTheme(R.style.Theme_QuietRebellion_Cyan_Dark)
+            "mono_light"   -> setTheme(R.style.Theme_QuietRebellion_Mono_Light)
+            "mono_dark"    -> setTheme(R.style.Theme_QuietRebellion_Mono_Dark)
+            "material_you" -> DynamicColors.applyToActivityIfAvailable(this)
+            else           -> setTheme(R.style.Theme_QuietRebellion_Cyan_Light)
+        }
+    }
+
+    private fun showSettingsDialog() {
+        val prefs = getSharedPreferences("prefs", MODE_PRIVATE)
+        val current = prefs.getString("theme", "cyan_light") ?: "cyan_light"
+        val dp = resources.displayMetrics.density
+
+        data class Opt(val key: String, val label: String, val fill: Int, val stroke: Int, val rainbow: Boolean = false)
+        val options = listOf(
+            Opt("cyan_light",   getString(R.string.str_theme_fresh_light),  0xFFF0FAFA.toInt(), 0xFF06B6D4.toInt()),
+            Opt("cyan_dark",    getString(R.string.str_theme_fresh_dark),   0xFF0A1929.toInt(), 0xFF06B6D4.toInt()),
+            Opt("mono_light",   getString(R.string.str_theme_mono_light),   0xFFF2F2F0.toInt(), 0xFFABABAB.toInt()),
+            Opt("mono_dark",    getString(R.string.str_theme_mono_dark),    0xFF1A1A1A.toInt(), 0xFF555555.toInt()),
+            Opt("material_you", getString(R.string.str_theme_material_you), 0, 0, rainbow = true),
+        )
+
+        val sheet = BottomSheetDialog(this)
+        val pad = (20 * dp).toInt()
+        val padH = (16 * dp).toInt()
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(padH, pad, padH, (36 * dp).toInt())
+        }
+
+        root.addView(TextView(this).apply {
+            text = getString(R.string.str_appearance)
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(4, 0, 0, (16 * dp).toInt())
+        })
+
+        options.forEach { opt ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                val vp = (14 * dp).toInt()
+                setPadding(4, vp, 4, vp)
+                isClickable = true; isFocusable = true
+                val tv = TypedValue()
+                theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+                setBackgroundResource(tv.resourceId)
+            }
+
+            val sz = (36 * dp).toInt()
+            row.addView(View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(sz, sz).apply { marginEnd = (16 * dp).toInt() }
+                background = if (opt.rainbow) {
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        gradientType = GradientDrawable.SWEEP_GRADIENT
+                        setColors(intArrayOf(0xFF7C3AED.toInt(), 0xFF06B6D4.toInt(), 0xFF2BAA5A.toInt(), 0xFFE07B00.toInt(), 0xFF7C3AED.toInt()))
+                    }
+                } else {
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(opt.fill)
+                        setStroke((2.5f * dp).toInt(), opt.stroke)
+                    }
+                }
+            })
+
+            row.addView(TextView(this).apply {
+                text = opt.label
+                textSize = 15f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+
+            if (opt.key == current) {
+                row.addView(TextView(this).apply {
+                    text = "✓"
+                    textSize = 18f
+                    setTextColor(0xFF06B6D4.toInt())
+                })
+            }
+
+            row.setOnClickListener {
+                prefs.edit().putString("theme", opt.key).apply()
+                sheet.dismiss()
+                recreate()
+            }
+            root.addView(row)
+        }
+
+        sheet.setContentView(root)
+        sheet.show()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-        val iconRes = if (isDark) R.drawable.ic_sun else R.drawable.ic_moon
-        menu.findItem(R.id.action_theme)?.setIcon(iconRes)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.action_theme) { toggleTheme(); return true }
+        if (item.itemId == R.id.action_settings) { showSettingsDialog(); return true }
         return super.onOptionsItemSelected(item)
     }
 
@@ -195,14 +303,14 @@ class MainActivity : AppCompatActivity() {
 
     @android.annotation.SuppressLint("MissingPermission")
     private fun connect() {
-        val adapter = btAdapter ?: return setStatus("Bluetooth not available")
+        val adapter = btAdapter ?: return setStatus(getString(R.string.str_bt_not_available))
 
         val devices = try {
             DeviceDiscovery.bondedDevices(adapter)
         } catch (e: SecurityException) {
             ensurePermissionsThenConnect(); return
         }
-        if (devices.isEmpty()) return setStatus("No paired Bluetooth devices found")
+        if (devices.isEmpty()) return setStatus(getString(R.string.str_no_paired_devices))
 
         val lastMac = getSharedPreferences("prefs", MODE_PRIVATE).getString("last_mac", null)
         val preferred = lastMac?.let { mac -> devices.firstOrNull { it.address == mac } }
@@ -214,7 +322,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             val names = devices.map { it.name ?: it.address }.toTypedArray()
             AlertDialog.Builder(this)
-                .setTitle("Select device")
+                .setTitle(getString(R.string.str_select_device))
                 .setItems(names) { _, i -> connectTo(devices[i]) }
                 .show()
         }
@@ -224,7 +332,7 @@ class MainActivity : AppCompatActivity() {
     private fun connectTo(device: android.bluetooth.BluetoothDevice) {
         lifecycleScope.launch {
             try {
-                setStatus("Connecting to ${device.name}…")
+                setStatus(getString(R.string.str_connecting_to, device.name))
                 boseService?.detach()
 
                 val transport = BluetoothTransport.connectDirect(device)
@@ -239,7 +347,7 @@ class MainActivity : AppCompatActivity() {
                 fetchAndRefresh(connection, device.name)
             } catch (e: Exception) {
                 Log.e("BoseCtl", "Connection failed: ${e::class.simpleName}: ${e.message}", e)
-                setStatus("Error: ${e.message}")
+                setStatus(getString(R.string.str_error_msg, e.message ?: ""))
             }
         }
     }
@@ -264,9 +372,9 @@ class MainActivity : AppCompatActivity() {
             val firmware     = try { c.firmware() } catch (_: Exception) { "" }
 
             val chargingIcon = if (charging == true) " ⚡" else ""
-            b.tvBattery.text  = "Battery: $battery%$chargingIcon"
-            b.tvFirmware.text = if (firmware.isNotEmpty()) "Firmware: $firmware" else ""
-            setStatus("Connected")
+            b.tvBattery.text  = getString(R.string.str_battery, battery, chargingIcon)
+            b.tvFirmware.text = if (firmware.isNotEmpty()) getString(R.string.str_firmware, firmware) else ""
+            setStatus(getString(R.string.str_connected))
 
             try {
                 val (_, mac) = c.source()
@@ -284,7 +392,7 @@ class MainActivity : AppCompatActivity() {
 
             updateUi()
         } catch (e: Exception) {
-            setStatus("Fetch error: ${e.message}")
+            setStatus(getString(R.string.str_fetch_error, e.message ?: ""))
         }
     }
 
@@ -337,7 +445,7 @@ class MainActivity : AppCompatActivity() {
         // UI is inverted: slider 10 = max ANC, device stores 0 = max ANC
         val uiVal = 10 - audioSettings.cncLevel
         b.sbCnc.progress = uiVal
-        b.tvCncLevel.text = "ANC: $uiVal"
+        b.tvCncLevel.text = getString(R.string.str_anc_level, uiVal)
         b.swAutoCnc.isChecked = auto
         b.layoutManualCnc.visibility = if (auto) View.GONE else View.VISIBLE
         b.tvAutoCncStatus.visibility = if (auto) View.VISIBLE else View.GONE
@@ -354,9 +462,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyEq() {
         for (band in eqBands) {
-            val name = when (band.bandId) { 0 -> "Bass"; 1 -> "Mid"; else -> "Treble" }
             val tv   = when (band.bandId) { 0 -> b.tvBassVal; 1 -> b.tvMidVal; else -> b.tvTrebleVal }
-            tv.text  = "$name: %+d dB".format(band.current)
+            tv.text  = "%+d".format(band.current)
             b.eqCurveView.setBand(band.bandId, band.current, band.minVal, band.maxVal)
         }
     }
@@ -381,7 +488,7 @@ class MainActivity : AppCompatActivity() {
         if (!show) return
 
         val activeName = activeMac?.let { pairedDevices[it] ?: shortenMac(it) } ?: "unknown"
-        b.tvActiveDevice.text = "Now playing: $activeName"
+        b.tvActiveDevice.text = getString(R.string.str_now_playing, activeName)
 
         b.rgPairedDevices.removeAllViews()
         others.forEach { mac ->
@@ -409,23 +516,23 @@ class MainActivity : AppCompatActivity() {
         b.btnReconnect.setOnClickListener { ensurePermissionsThenConnect() }
 
         b.toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_theme) { toggleTheme(); true } else false
+            if (item.itemId == R.id.action_settings) { showSettingsDialog(); true } else false
         }
 
         b.btnRename.setOnClickListener {
             val cur = b.tvDeviceName.text.toString()
             val input = android.widget.EditText(this).apply { setText(cur) }
             AlertDialog.Builder(this)
-                .setTitle("Rename Device")
+                .setTitle(getString(R.string.str_rename_device_title))
                 .setView(input)
-                .setPositiveButton("OK") { _, _ ->
+                .setPositiveButton(android.R.string.ok) { _, _ ->
                     val newName = input.text.toString().trim()
                     if (newName.isNotEmpty() && newName != cur) sendCmd {
                         conn!!.setDeviceName(newName)
                         b.tvDeviceName.text = newName
                     }
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.str_cancel), null)
                 .show()
         }
 
@@ -443,7 +550,7 @@ class MainActivity : AppCompatActivity() {
                 if (!fromUser || updatingUi) return
                 // invert: UI 10 = max ANC = device 0
                 audioSettings = audioSettings.copy(cncLevel = 10 - progress)
-                b.tvCncLevel.text = "ANC: $progress"
+                b.tvCncLevel.text = getString(R.string.str_anc_level, progress)
             }
             override fun onStartTrackingTouch(sb: SeekBar) = Unit
             override fun onStopTrackingTouch(sb: SeekBar) {
@@ -477,9 +584,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         b.eqCurveView.onBandChanged = { bandId, value ->
-            val name = when (bandId) { 0 -> "Bass"; 1 -> "Mid"; else -> "Treble" }
             val tv   = when (bandId) { 0 -> b.tvBassVal; 1 -> b.tvMidVal; else -> b.tvTrebleVal }
-            tv.text  = "$name: %+d dB".format(value)
+            tv.text  = "%+d".format(value)
         }
         b.eqCurveView.onBandReleased = { bandId, value ->
             sendCmd { conn!!.setEqBand(bandId, value) }
@@ -519,12 +625,12 @@ class MainActivity : AppCompatActivity() {
 
         b.btnPowerOff.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Power Off")
-                .setMessage("Power off ${b.tvDeviceName.text}?")
-                .setPositiveButton("Power Off") { _, _ ->
+                .setTitle(getString(R.string.str_power_off_title))
+                .setMessage(getString(R.string.str_power_off_message, b.tvDeviceName.text))
+                .setPositiveButton(getString(R.string.str_power_off_confirm_btn)) { _, _ ->
                     sendCmd { conn!!.powerOff() }
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.str_cancel), null)
                 .show()
         }
 
@@ -542,12 +648,12 @@ class MainActivity : AppCompatActivity() {
         // Pairing mode
         b.btnPairingMode.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Pairing Mode")
-                .setMessage("Enter Bluetooth pairing mode? The headphones will disconnect.")
-                .setPositiveButton("Enter Pairing") { _, _ ->
+                .setTitle(getString(R.string.str_pairing_mode_title))
+                .setMessage(getString(R.string.str_pairing_mode_message))
+                .setPositiveButton(getString(R.string.str_enter_pairing_btn)) { _, _ ->
                     sendCmd { conn!!.enterPairingMode() }
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.str_cancel), null)
                 .show()
         }
     }
@@ -556,7 +662,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Run a suspending BMAP command, then immediately refresh UI from device. */
     private fun sendCmd(block: suspend () -> Unit) {
-        if (conn == null) { Toast.makeText(this, "Not connected", Toast.LENGTH_SHORT).show(); return }
+        if (conn == null) { Toast.makeText(this, getString(R.string.notif_title_disconnected), Toast.LENGTH_SHORT).show(); return }
         lifecycleScope.launch {
             try {
                 block()

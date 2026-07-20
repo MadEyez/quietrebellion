@@ -28,6 +28,7 @@ and without root.
 - **Now Playing** — shows streaming device name in status
 - **Foreground service** — connection stays alive when app is in background
 - **Persistent notification** with ANC toggle, mode cycling (favorites only), power off
+- **Themes** — Fresh & Clean (cyan) / Monochrome, each in Light + Dark; Material You on Android 12+; tap the tune icon in the toolbar to switch
 
 
 ## Requirements

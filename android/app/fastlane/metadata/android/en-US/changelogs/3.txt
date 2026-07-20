@@ -1,0 +1,10 @@
+New features:
+- Two built-in themes: Fresh & Clean (cyan) and Monochrome, each in Light and Dark
+- Material You support (Android 12+): colours follow your wallpaper
+- Theme picker: tap the settings icon (top right) to open a bottom sheet with colour previews
+
+UI polish:
+- Typography: DM Sans variable font with correct bold/semibold weights throughout
+- EQ curve shadow lines follow the Bézier curve shape instead of being horizontal
+- EQ shadow curves and main curve extend flat beyond the outer handles to the view edges
+- EQ band labels (Bass / Mid / Treble) horizontally aligned with their control points
