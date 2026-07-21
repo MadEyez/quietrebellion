@@ -56,10 +56,8 @@ Packet: [31, 3, 0x05, 2, MODE_INDEX, VOICE_PROMPT]
 | 1     | Aware      | Transparency / passthrough     | 0x02        |
 | 2     | Immersion  | Spatial audio immersive        | 0x22        |
 | 3     | Cinema     | Spatial audio cinema           | 0x24        |
-| 4     | Home       | Custom home profile            | 0x0a        |
-| 5     | None       | Empty/custom slot              | 0x00        |
-| 6     | None       | Empty/custom slot              | 0x00        |
-| 7     | None       | Empty/custom slot              | 0x00        |
+| 4     | (custom)   | User-created slot              | 0x0a        |
+| 5–10  | None       | Empty/custom slot              | 0x00        |
 
 #### Other Unauthenticated START Commands (Block 31)
 | Function | Name       | Notes |
@@ -93,9 +91,9 @@ over CNC level, spatial audio, wind block, and ANC** — all without any auth.
 |----------|----------|--------|-------|
 | [31.6] ModeConfig | SETGET | **WORKS on modes 5-10** | Full config: CNC, spatial, wind, ANC |
 | [31.6] ModeConfig | SET | Error 5 (auth) | SET is auth-gated, but SETGET isn't |
-| [31.8] Favorites | SETGET | **WORKS** | Set favorite mode indices |
+| [31.8] Favorites | SETGET | Echo only (auth-blocked for writes) | Read-only without auth; only echoes existing value |
 | [31.8] Favorites | SET | Error 5 (auth) | |
-| [31.4] DefaultMode | SETGET | Timeout (may work) | Set power-on mode |
+| [31.4] DefaultMode | SETGET | No response (blocked) | Both GET and SETGET timeout; fully auth-gated |
 | [31.4] DefaultMode | SET | Error 5 (auth) | |
 | [31.3] CurrentMode | SETGET | Error 5 (auth) | But START works for switching |
 
@@ -319,12 +317,12 @@ Confirmed auth-blocked (SET/START only):
 - Settings.Multipoint [1.10] — multipoint toggle
 - Settings.StandbyTimer [1.4] — auto-off timer
 - **Settings.Buttons [1.9]** — SETGET is accepted (STATUS echoed back) but action does **not** change; actual remapping requires SET (cloud auth). Read-only in practice.
-- **AudioModes.DefaultMode [31.4]** — GET returns no response (timeout, kills connection). Do not call.
+- **AudioModes.DefaultMode [31.4]** — both GET and SETGET produce no response (timeout). Do not call GET; SETGET also blocked.
 
 Confirmed SETGET works without auth:
 - Settings.EQ [1.7] — **full equalizer control** (-10 to +10, 3 bands)
-- AudioModes.ModeConfig [31.6] — **CNC, spatial, wind, ANC** on custom modes
-- AudioModes.Favorites [31.8] — favorite mode selection
+- AudioModes.ModeConfig [31.6] — **CNC, spatial, wind, ANC** on custom modes 5–10
+- AudioModes.Favorites [31.8] — read-only (echoes current value; writes are Runtime error 8)
 
 ## RFCOMM Channels
 | Channel | Purpose |
@@ -387,20 +385,26 @@ Serial:  T5333020XXXXXXXXXXXXX
 ```
 
 ## Function Block Map
-| Block | Name              | Functions found |
-|-------|-------------------|-----------------|
-| 0     | ProductInfo       | 0,1,2,3,5,6,7,12,15,17,23 |
-| 1     | Settings          | 0,2,3,5,7,9,10,11,12,24,27 |
-| 2     | Status            | 0,2,5,16,21 |
-| 3     | FirmwareUpdate    | 0,1,4,6,7,15,16 |
-| 4     | DeviceManagement  | 0,1,4,5,8,9,14,18 |
-| 5     | AudioManagement   | 0,1,3,4,5,7,13,17 |
-| 6     | CallManagement    | 0 |
-| 7     | Control           | 0,1,4 |
-| 8     | Debug             | 7,8 |
-| 9     | Notification      | 0,2 |
-| 18    | Authentication    | 0,1,9,11,12,13,24 |
-| 31    | AudioModes        | 0,2,3,4,8,10,11 |
+| Block | Name              | Functions found (readable) | Auth-gated writes |
+|-------|-------------------|---------------------------|-------------------|
+| 0     | ProductInfo       | 0,1,2,3,5,6,7,12,15,17,23 | 4 |
+| 1     | Settings          | 0,2,3,5,7,9,10,11,12,24,27,**34** | 1 |
+| 2     | Status            | 0,2,5,16,21 | 1,18 |
+| 3     | FirmwareUpdate    | 0,1,4,6,7,15,16 | 2,5,8,9 |
+| 4     | DeviceManagement  | 0,1,4,8,9,14,18 | 2,3,5(needs MAC),6(needs MAC),7,15(needs payload),19 |
+| 5     | AudioManagement   | 0,1,3,4,5,7,13,17 | 2,6 |
+| 6     | CallManagement    | 0 | 1 |
+| 7     | Control           | 0,1,4 | 5,6,11 |
+| 8     | Debug             | 7,8 | 3,10,13,16,22 — other funcs: err24 |
+| 9     | Notification      | 0,2 | 1 |
+| 13    | **UNKNOWN**       | 0,1,13,14 | 7,8,9,10,11,12,15 |
+| 18    | Authentication    | 0,1,9,11,12,13,24 | 2,19,27,28,29 |
+| 22–26 | UNKNOWN (err24)   | 24.13 | most funcs |
+| 31    | AudioModes        | 0,2,3,6,8,10,11 | 1 |
+
+**Error 24 (0x18):** Blocks 8 (partial), 22–26 return this unknown error on most functions.
+Not to be confused with error 20 (InsecureTransport). Likely means "not available on this transport"
+or a Bose-specific "SecureSession required" variant. Blocks 32–63 all return FblockNotSupp.
 
 ## Settings Functions (Block 1)
 | Func | Name             | Read value | Notes |
@@ -456,14 +460,25 @@ CloudToProductChallenge, GoogleFeatureKeys, GoogleFeatureKeyData
 - OTP key type [18.11]: 3
 - Product IRK [18.24]: `3713b952XXXXXXXXXXXXXXXXXXXXXXXX`
 
-### Hypothesized Auth Flow
-1. App generates ephemeral ECDH keypair
-2. [18.19] START → App sends public key → headphones return PROCESSING
-3. [18.27] START → Headphones generate challenge → app forwards to Bose cloud
-4. Bose cloud signs the challenge
-5. [18.28] → App sends cloud response back to headphones
-6. [18.29] → Cloud-to-product verification
-7. Headphones grant SET/SETGET privileges for this session
+### Auth-Challenge Passive Drain (2026-07-21)
+
+`[18.19]` START with a real P-384 ephemeral public key:
+- Immediate: PROCESSING (key accepted)
+- ~5 seconds later: RESULT (empty payload) — no challenge bytes delivered
+- `[18.27]`–`[18.29]` remain OpNotSupp even after key exchange
+
+**Conclusion:** `[18.19]` is only a key-registration step, not a challenge-delivery mechanism.
+The challenge flows directly between the device and Bose's cloud service — it never passes
+through our RFCOMM connection. No offline bypass is possible over RFCOMM alone.
+
+### Auth Flow (confirmed)
+1. App generates an ephemeral ECDH P-384 keypair
+2. `[18.19]` START → app sends its public key → device replies PROCESSING, then RESULT (empty, ~5s)
+3. Device contacts cloud (`nadc.data.api.bose.io`) directly to exchange the challenge
+4. Cloud signs the challenge and returns a response
+5. `[18.28]` → app forwards cloud response to the device
+6. `[18.29]` → cloud-to-product verification step
+7. Device grants SET/SETGET privileges for this session
 
 ### Cloud API
 - Primary API: `nadc.data.api.bose.io` (uses QUIC/HTTP3, falls back to HTTPS)
@@ -674,17 +689,172 @@ path ([3.2] START) is a binary state transition with no practical NC level contr
 The discrete ANR modes (off/high/wind/low) via [1.6] SETGET are the full extent
 of unauthenticated NC control on this firmware version.
 
-## Future Work
-- ~~Crack ModeConfig SETGET payload format~~ **DONE** — full CNC/spatial/wind/ANC control
-- ~~Crack Settings SETGET~~ **DONE** — EQ, name, sidetone, multipoint, auto-pause, auto-answer all work (voice prompts removed in current FW)
-- ~~Implement button remapping [1.9]~~ **NOT POSSIBLE without auth** — SETGET accepted but silently ignored; actual remap requires SET (cloud ECDH). Read current mapping works.
-- ~~Try USB-C connection~~ **PARTIALLY DONE** — USB HID interface found, needs init handshake
-- ~~Reverse audio source/device routing~~ **DONE** — [5.1] source query, [4.12] routing START, [5.3] transport controls confirmed
-- ~~Implement [5.3] transport controls~~ **DONE** — play(0x01), pause(0x02), next(0x03), prev(0x04) confirmed with active stream
-- ~~Decode MediaState/MediaProgress~~ **DONE** — [5.4] playing/paused state, [5.7] position+duration in seconds
-- Crack USB BMAP initialization — capture USB traffic from app to find handshake sequence
-- Explore [31.9] AudioModes Reset — factory reset individual modes?
-- Investigate firmware downgrade via bose-dfu over USB
-- Map the unknown bytes [40-41] in ModeConfig STATUS (mode-type specific config?)
-- Decode [4.14] and [4.18] — both return `[01]`, static, meaning unknown
-- Crack [31.4] DefaultMode — GET causes timeout (connection dies); format unknown
+## Future Work / Status
+
+### Completed ✅
+- ~~Crack ModeConfig SETGET payload format~~ — full CNC/spatial/wind/ANC control
+- ~~Crack Settings SETGET~~ — EQ, name, sidetone, multipoint, auto-pause, auto-answer
+- ~~Button remapping [1.9]~~ — not possible without auth (SETGET silently ignored)
+- ~~USB-C connection~~ — HID interface found; firmware-update only, needs DFU handshake
+- ~~Audio source/device routing~~ — [5.1] source query, [4.12] routing, [5.3] transport controls
+- ~~Transport controls [5.3]~~ — play/pause/next/prev confirmed with active A2DP stream
+- ~~MediaState/MediaProgress~~ — [5.4] state, [5.7] position + duration
+- ~~Full block sweep 0–63~~ — Block 13 discovered; blocks 32–63 all FblockNotSupp
+- ~~Channel 14/22 decode~~ — beacon + diagnostic push decoded
+- ~~Auth challenge format~~ — fully resolved; see Auth section
+- ~~Passive notification listener~~ — resolved: no push on unauthenticated RFCOMM
+- ~~[31.4] DefaultMode SETGET~~ — no response; both GET and SETGET are blocked
+- ~~Block 13 GetAll~~ — [13.1] START → OpNotSupp; no hidden functions accessible
+- ~~[31.8] Favorites SETGET~~ — Runtime 8 for all values except original echo; auth-blocked
+
+### Auth boundary: fully mapped (2026-07-21)
+`[18.19]` START + P-384 public key → PROCESSING (immediate) → RESULT (empty, ~5s later).
+No challenge payload is delivered over RFCOMM. `[18.27]`–`[18.29]` remain OpNotSupp.
+**Auth is fully cloud-dependent. No offline bypass is possible over RFCOMM alone.**
+The only remaining path would be a cloud MITM via Frida + certificate unpinning on Android.
+
+### Low priority — require physical interaction
+- **[13.14] correlation** — put headphones on/off while polling; may confirm wear-detection hypothesis
+- **[1.34] decode** — single byte `01`; toggle remaining app settings (low-latency, hearing protection?)
+- **Channel 14 payload** — observe `ee 10` while charging to see if it tracks battery state
+
+### Dead ends (do not pursue further)
+- [31.4] DefaultMode — both SETGET and GET produce no response; fully auth-gated
+- Blocks 22–26 (err24) — likely SecureSession or USB-only transport requirement
+- [31.8] Favorites — writes always Runtime 8; read-only without auth
+- Block 13 GetAll / writes — all auth-gated
+- Passive notifications — confirmed absent on unauthenticated RFCOMM
+- [5.17] / [4.6] extra bytes / [7.1] — static fields with no actionable path
+- USB BMAP — Bose Updater / DFU mode only; not a general control channel
+
+## RFCOMM Channel Details (Updated 2026-07-21)
+
+### Channel 14 — Status Beacon
+Sends exactly 6 bytes every ~1 second: `ff 55 02 00 ee 10`
+- `ff 55` = magic header (Bose proprietary framing, NOT BMAP)
+- `02` = message type or payload length = 2
+- `00` = ??? 
+- `ee 10` = payload: meaning unknown, static during session
+
+**Open question:** capture while charging/discharging to see if `ee 10` changes with battery state.
+
+### Channel 22 — Diagnostic Push
+Pushes 4 BMAP-framed packets from **Block 3 (FirmwareUpdate)** immediately on connect, then goes silent:
+
+| Packet | Raw | Notes |
+|--------|-----|-------|
+| `[3.1]` SET | `d7 38 53` | 3 bytes, meaning unknown |
+| `[3.2]` SET | `69 e6 60 df 2c 14` | 6 bytes — possible internal MAC or build timestamp + suffix |
+| `[3.3]` SET | `ff ff ff` | All-ones — error/unavailable indicator |
+| `[3.10]` SET | `4c 3a f8 7f 24 62 bf 8f` | 8 bytes — 64-bit counter or hash |
+
+These arrive as SET operator (0) **from** the device — the device is pushing diagnostic state, not responding to GET.
+
+### Channel 24 — Silent
+Accepts connections, sends nothing.
+
+## Block 13 — NEW (Unknown, discovered 2026-07-21)
+
+| Func | Access | Value | Notes |
+|------|--------|-------|-------|
+| 0 | GET | "1.1.0" | FblockInfo |
+| 1 | GET | `ff 83` | 16-bit value; -125 as int16; static |
+| 7–12 | auth | — | OpNotSupp without auth |
+| 13 | GET | `01` | Single byte, stable |
+| 14 | GET | `00` or `02` | **Volatile between sessions** |
+| 15 | auth | — | OpNotSupp without auth |
+
+All write operators (SETGET/START) are auth-gated. Block 13 is read-only without cloud auth.
+
+**[13.14] hypothesis:** Tracks A2DP connection count (2 = two audio sources active via multipoint; 0 = no audio stream). Needs correlation test.
+
+## New Function Details (2026-07-21 Sweep)
+
+### [4.6] — Connection Info by MAC (NEW)
+`GET [6-byte MAC]` → `[MAC (6B)] [4B extra]`
+```
+GET [f0:57:a6:07:14:61 (PC)] → f0 57 a6 07 14 61 1f 0f 9c e9
+  [6]   = 0x1f = 31 — LQ? caps? same value as [5.3] caps — coincidence
+  [7]   = 0x0f = 15
+  [8-9] = 0x9ce9 — 16-bit: RSSI pair? connection handles?
+```
+
+### [5.13] — MediaProgress Extended Format
+`[pos_hi, pos_lo, 00, 00, dur_hi, dur_lo, 00, 00, dur_hi, dur_lo]` (10 bytes)
+- [0-1]: position in seconds (uint16 BE) — matches [5.7][5]
+- [4-5]: track duration (matches [5.7][2-3])
+- [8-9]: track duration repeated (buffer end? playlist end?)
+
+### [5.17] — Unknown, 80 bytes, STATIC
+Identical across 3 consecutive reads. Not playback-related. Likely audio DSP filter bank or
+routing coefficients. Repeating `7f ff ff ff` (INT32_MAX) = unused slots.
+Notable constants: `fe 08` (−504), `ae fc` (−20740), `7f 46 dc 5c`.
+
+### [8.7] — BMAP Session Counter
+Increments with each new RFCOMM ch2 connection since power-on.
+Stable within a session. Observed: 03 → 04 across successive sessions.
+
+### [3.4] — Backup Firmware Slot Version
+`00 00 00 00 00 "0.0.0"` — "0.0.0" = backup slot empty (no previous OTA image stored)
+
+### [3.6] — Active Firmware Slot
+`00 01` = slot 1 active (dual-bank OTA layout; slot 0 = backup, slot 1 = running)
+
+### [7.1] = `08 73` = 2163
+Meaning unknown. Candidates: session uptime in some unit, battery cell voltage (unlikely),
+or control-state bitfield `0x0873`.
+
+## Notification System (Block 9)
+
+### `[9.2]` — Notification Subscription Bitmask
+`GET` → `00 00 00 00` (not subscribed)
+`SETGET [00 00 00 01]` → `00 00 00 01` (subscribed)
+
+Bit 0 = enable push notifications. Other values (`ff ff ff ff`, `01 00 00 00`) are clamped to 0
+(invalid), only little-endian `00 00 00 01` is accepted.
+
+**Critical finding:** Subscribing via `[9.2]` does NOT trigger unsolicited STATUS packets over
+unauthenticated RFCOMM. Tested: 30s passive drain after subscription + [1.1] GetAll = 0 packets.
+Conclusion: Push notifications are only delivered to **authenticated** BMAP sessions (or BLE GATT).
+The polling approach (`bmap-capture.py` style) is the correct method for observing state changes
+over unauthenticated RFCOMM.
+
+## AudioModes — Complete Mode List (GetAll [31.1] START)
+
+GetAll reveals all 11 mode configs + favorites + current settings in one shot.
+Mode 4 is the user's custom mode, renamed from "Home" to **"Arbeit"** (German for "Work").
+
+### Current Mode Config (from GetAll, 2026-07-21)
+| Mode | Name | VP | Editable | CNC | spatial | wind | ANC |
+|------|------|----|----------|-----|---------|------|-----|
+| 0 | Quiet | 0x0001 | No | 0 | off | off | on |
+| 1 | Aware | 0x0002 | No | 10 | off | wind | on |
+| 2 | Immersion | 0x0022 | No | 0 | room | off | on |
+| 3 | Cinema | 0x0024 | No | 0 | room | off | on |
+| 4 | **Arbeit** | 0x000b | **Yes** | **5** | off | off | **on** |
+| 5–10 | None | 0x0000 | Yes | 10 | off | off | on |
+
+### `[31.8]` Favorites = `0b 00 13`
+Raw 3-byte response. Encoding unclear — `0b`=11, `00`=0, `13`=19 are out of the 0-10 mode range.
+Possibly: `[0b 00]` = 2-byte slot descriptor + `13` = something else. Needs correlation with app.
+
+### `[31.10]` Current Live Settings = `05 00 00 00 01`
+Format: `[cnc, autoCNC, spatial, wind, anc]`
+- CNC=5, autoCNC=off, spatial=off, wind=off, ANC=on
+
+### `[31.11]` = `1f ff ff ff ff` (NEW — 5 bytes)
+- `1f` = 0b00011111 = bits 0–4 set = modes 0–4 are preset/locked
+- `ff ff ff ff` = possibly: all custom slots (5-10+) are writable, or some capability bitmask
+Hypothesis: supported/locked mode mask — first 5 bits = 5 factory presets, rest = available for customization.
+
+### `[31.2]` = `04 07 00 00 00 7f 02` (7 bytes)
+Meaning unknown. `04` = current mode index (Arbeit=4 was active). `07` = count of modes in carousel?
+`7f 02` = some 16-bit value.
+
+## Settings — Function 34 (NEW)
+
+`[1.34]` GET = `01` (single byte, boolean or enum).
+Discovered via GetAll `[1.1]` START — invisible to direct GET scan (was beyond FUNC_MAX=25).
+Meaning unknown. Candidates: low-latency mode, hearing protection, conversation mode auto-on,
+or a feature flag added in firmware 8.2.x.
+
