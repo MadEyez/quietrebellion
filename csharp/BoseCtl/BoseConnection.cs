@@ -352,7 +352,7 @@ public sealed class BoseConnection : IAsyncDisposable
         if (level is < 0 or > 10)
             throw new ArgumentOutOfRangeException(nameof(level), "CNC level must be 0–10");
         var s = await AudioSettingsAsync();
-        // ponytail: AutoCnc=true → firmware ignores explicit level; must clear it first.
+        // AutoCnc=true → firmware ignores explicit level; must clear it first.
         await WriteAudioSettingsAsync(s with { CncLevel = level, AutoCnc = false });
     }
 
@@ -464,7 +464,7 @@ public sealed class BoseConnection : IAsyncDisposable
     public async Task PowerOffAsync()
     {
         var (fb, fn) = QcUltra2.Power;
-        // ponytail: socket closes on the device side after power-off; swallow the IO exception.
+        // Socket closes on the device side after power-off; swallow the IO exception.
         try { await _t.SendRecvAsync(BmapProtocol.Build(fb, fn, Op.Start, new byte[] { 0x00 })); }
         catch { /* expected — device disconnects */ }
     }
@@ -519,7 +519,7 @@ public sealed class BoseConnection : IAsyncDisposable
     /// Find the response packet matching [fblock.func] among all packets in raw.
     /// Skips unsolicited notifications (e.g. [2.3] FuncNotSupp) that may precede
     /// the actual reply. Falls back to the first packet if no match found.
-    /// ponytail: linear scan over typically 1-3 packets; no upgrade needed.
+    /// Linear scan over typically 1-3 packets; no upgrade needed.
     /// </summary>
     private static BmapResponse? FindResponse(byte[] raw, byte fblock, byte func)
     {

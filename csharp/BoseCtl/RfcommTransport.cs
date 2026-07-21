@@ -25,7 +25,7 @@ public sealed class RfcommTransport : IAsyncDisposable
     private readonly DataReader   _reader;
     private readonly bool         _debug;
 
-    // ponytail: 3s first-packet timeout, 0.4s drain gap – matches transport.py.
+    // 3s first-packet timeout, 0.4s drain gap – matches transport.py.
     // Upgrade path: make timeouts configurable if used as a library.
     private static readonly TimeSpan FirstPacketTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan DrainGapTimeout    = TimeSpan.FromMilliseconds(400);

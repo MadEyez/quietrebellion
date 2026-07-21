@@ -21,7 +21,7 @@ namespace BoseCtl;
 /// </summary>
 public static class QcUltra2
 {
-    // ponytail: RFCOMM channel 2 is hardcoded in all bosectl captures.
+    // RFCOMM channel 2 is hardcoded in all bosectl captures.
     // Upgrade path: SDP lookup on BMAP_UUID if a device uses a different channel.
     public const int RfcommChannel = 2;
 
@@ -352,7 +352,7 @@ public static class QcUltra2
     /// Wire format: [totalModes, 0x00, maskByte]  – bit N = mode N is a favourite.
     /// Returns (set of favourite mode indices, totalModes).
     /// </summary>
-    // ponytail: mask fits in one byte → modes 0-7 only. Matches Android BuildFavorites ceiling.
+    // Mask fits in one byte → modes 0-7 only. Matches Android BuildFavorites ceiling.
     public static (IReadOnlySet<int> favs, int totalModes) ParseFavorites(byte[] p)
     {
         if (p.Length < 3) return (new HashSet<int>(), 11);

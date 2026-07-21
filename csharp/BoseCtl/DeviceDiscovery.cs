@@ -42,7 +42,7 @@ public sealed class DiscoveredDevice
 
 public static class DeviceDiscovery
 {
-    // ponytail: UUID filter is the most reliable selector across all BMAP devices.
+    // UUID filter is the most reliable selector across all BMAP devices.
     // Upgrade path: also check Bluetooth Modalias product ID (0x4082 for QC Ultra 2)
     // for disambiguation when multiple Bose devices are paired.
     private static readonly Guid BmapUuid = new("00000000-deca-fade-deca-deafdecacaff");

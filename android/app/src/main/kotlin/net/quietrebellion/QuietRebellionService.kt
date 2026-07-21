@@ -130,7 +130,7 @@ class QuietRebellionService : Service() {
 
     private fun startPolling() {
         pollJob?.cancel()
-        // ponytail: polls battery+mode every 30s when app is backgrounded and screen is on.
+        // Polls battery+mode every 30s when app is backgrounded and screen is on.
         // Ceiling: changes appear up to 30s late in notification/widget.
         // Upgrade: unsolicited BMAP STATUS listener if device sends them.
         pollJob = scope.launch {

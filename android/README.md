@@ -88,7 +88,7 @@ Three strategies are tried in order, first success wins:
 
 RFCOMM channel 2 is hardcoded (same as all other Quiet Rebellion implementations).
 See [`BluetoothTransport.kt`](app/src/main/kotlin/net/quietrebellion/BluetoothTransport.kt)
-for details and the `ponytail:` comments on known ceilings.
+for details and the inline comments on known ceilings.
 
 ## Architecture
 

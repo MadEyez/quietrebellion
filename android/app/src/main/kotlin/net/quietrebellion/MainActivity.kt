@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 ensurePermissionsThenConnect()
             }
-            // ponytail: polls every 15s while app is open; ceiling: ~15s staleness for battery/mode.
+            // Polls every 15s while app is open; ceiling: ~15s staleness for battery/mode.
             pollJob = lifecycleScope.launch {
                 while (true) {
                     delay(15_000)

@@ -19,7 +19,7 @@ public static class BmapIcons
 {
     [DllImport("user32.dll")] private static extern bool DestroyIcon(nint hIcon);
 
-    // ponytail: Icon.FromHandle wraps an existing GDI handle without owning it.
+    // Icon.FromHandle wraps an existing GDI handle without owning it.
     // Clone() creates a new managed Icon with its own copy so we can safely
     // call DestroyIcon on the original HICON from GetHicon().
     private static Icon Make(Color fill)

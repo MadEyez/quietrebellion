@@ -32,7 +32,7 @@ class BluetoothTransport private constructor(
     private val out: OutputStream,
     private val closer: Closeable,
 ) : Closeable {
-    // ponytail: serialises concurrent callers (service poll + MainActivity poll share one socket).
+    // Serialises concurrent callers (service poll + MainActivity poll share one socket).
     private val mutex = Mutex()
 
     companion object {
@@ -59,7 +59,7 @@ class BluetoothTransport private constructor(
                     withContext(Dispatchers.IO) { socket.connect() }
                     Log.d(TAG, "connectDirect: reflection connect() ok isConnected=${socket.isConnected}")
                 } catch (e: SecurityException) {
-                    // ponytail: MIUI notifyPowerKeeper() throws SecurityException AFTER connect succeeds.
+                    // MIUI notifyPowerKeeper() throws SecurityException AFTER connect succeeds.
                     // Treat as success if socket reports isConnected.
                     Log.w(TAG, "connectDirect: SecurityException (notifyPowerKeeper?), isConnected=${socket.isConnected}: ${e.message}")
                     if (!socket.isConnected) { socket.close(); throw e }
@@ -111,7 +111,7 @@ class BluetoothTransport private constructor(
         withContext(Dispatchers.IO) { out.write(packet); out.flush() }
         delay(SEND_RECV_DELAY_MS)
 
-        // ponytail: same available()-polling as drainGreeting – MIUI read() not interruptible.
+        // Same available()-polling as drainGreeting – MIUI read() not interruptible.
         val first = withTimeout(FIRST_PACKET_TIMEOUT_MS) {
             while (inp.available() == 0) delay(20)
             withContext(Dispatchers.IO) { readChunk() }
@@ -139,7 +139,7 @@ class BluetoothTransport private constructor(
 
     /** Drain greeting bytes sent on connect. Polls available() to avoid blocking read() on MIUI. */
     private suspend fun drainGreeting() {
-        // ponytail: MIUI BluetoothSocket.inputStream.read() ignores Thread.interrupt(),
+        // MIUI BluetoothSocket.inputStream.read() ignores Thread.interrupt(),
         // so withTimeoutOrNull hangs. Use available()-based polling instead.
         // Ceiling: 50ms poll granularity; device greeting must arrive within 400ms.
         val deadline = System.currentTimeMillis() + DRAIN_GAP_TIMEOUT_MS

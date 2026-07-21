@@ -133,7 +133,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
 
     suspend fun powerOff() {
         val (fb, fn) = QcUltra2.Power
-        // ponytail: device disconnects immediately after power-off; no STATUS expected.
+        // Device disconnects immediately after power-off; no STATUS expected.
         try { transport.sendRecv(BmapProtocol.build(fb, fn, Op.START, byteArrayOf(0x00))) }
         catch (_: Exception) { /* expected – socket closes */ }
     }
@@ -153,7 +153,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
 
     suspend fun enterPairingMode() {
         val (fb, fn) = QcUltra2.Pairing
-        // ponytail: device enters pairing and typically disconnects – socket close is expected.
+        // Device enters pairing and typically disconnects – socket close is expected.
         try { transport.sendRecv(BmapProtocol.build(fb, fn, Op.START, byteArrayOf(0x01))) }
         catch (_: Exception) { }
     }
@@ -166,7 +166,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
 
     suspend fun setCncLevel(level: Int) {
         require(level in 0..10) { "CNC level must be 0–10" }
-        // ponytail: autoCnc=true lets the device manage level automatically → manual changes ignored.
+        // autoCnc=true lets the device manage level automatically → manual changes ignored.
         // Force autoCnc=false so the explicit level is applied.
         writeAudioSettings(audioSettings().copy(cncLevel = level, autoCnc = false))
     }
@@ -209,7 +209,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
         val (fb, fn) = QcUltra2.Routing
         val pkt = BmapProtocol.build(fb, fn, Op.START, QcUltra2.buildRouting(mac))
         val resp = BmapProtocol.parse(transport.sendRecv(pkt)) ?: return
-        // ponytail: FuncNotSupp (4) on [4.12] means the firmware routing table is empty –
+        // FuncNotSupp (4) on [4.12] means the firmware routing table is empty –
         // the device only registers this function when two BT connections are active simultaneously.
         // Upgrade path: query connected-device count if a future BMAP version exposes it.
         if (resp.op == Op.ERROR && resp.payload.getOrNull(0) == 4.toByte())

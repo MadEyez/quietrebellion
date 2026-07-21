@@ -50,7 +50,7 @@ class EqCurveView @JvmOverloads constructor(
     private val zeroLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = curveColor; strokeWidth = 1.5f * dp; style = Paint.Style.STROKE; alpha = 35
     }
-    // ponytail: one line per dB step; ceiling = 20 lines max (range ±10)
+    // One line per dB step; ceiling = 20 lines max (range ±10)
     private val fanPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = fanColor; strokeWidth = 1f * dp; style = Paint.Style.STROKE
     }

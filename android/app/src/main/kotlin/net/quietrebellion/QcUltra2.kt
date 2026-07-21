@@ -28,7 +28,7 @@ data class AudioSettings(
 data class EqBand(val bandId: Int, val name: String, val minVal: Int, val maxVal: Int, val current: Int)
 
 object QcUltra2 {
-    // ponytail: RFCOMM channel 2 is hardcoded in all bosectl captures.
+    // RFCOMM channel 2 is hardcoded in all bosectl captures.
     // Upgrade: SDP lookup on BMAP_UUID if a device uses a different channel.
     const val RFCOMM_CHANNEL = 2
     val BMAP_UUID: UUID = UUID.fromString("00000000-deca-fade-deca-deafdecacaff")
@@ -171,7 +171,7 @@ object QcUltra2 {
     }
 
     fun buildFavorites(totalModes: Int, favSet: Set<Int>): ByteArray {
-        // ponytail: mask is stored in one byte → only modes 0-7 survive toByte().
+        // Mask is stored in one byte → only modes 0-7 survive toByte().
         // If the device ever uses modes 8-10 as favourites, byte[3] must carry bits 8-10.
         // Upgrade: mask.and(0xFF).toByte() in [2], (mask shr 8).toByte() in [3].
         var mask = 0

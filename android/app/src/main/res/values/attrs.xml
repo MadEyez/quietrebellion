@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ponytail: Material3 color attrs not found by AAPT2 in AGP 8.5+ / compileSdk 35.
+    <!-- Material3 color attrs not found by AAPT2 in AGP 8.5+ / compileSdk 35.
          Declaring them here lets AAPT2 link successfully. -->
     <attr name="colorInversePrimary" format="color" />
     <attr name="colorInverseSurface" format="color" />
