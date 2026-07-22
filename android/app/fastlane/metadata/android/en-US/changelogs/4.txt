@@ -1,0 +1,4 @@
+
+Internal:
+- Added app icon for F-Droid store listing
+- Code comment cleanup
