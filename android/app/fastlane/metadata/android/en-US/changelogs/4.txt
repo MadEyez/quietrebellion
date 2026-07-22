@@ -1,4 +1,8 @@
-
-Internal:
+Fixes & improvements:
+- Removed non-functional Auto-ANC toggle (firmware rejects autoCnc=1 with a runtime error; manual level control is unaffected)
+- Switching Listening Mode now updates ANC level, Spatial Audio and Wind Block in ~400 ms instead of ~3 s
+- Toggles (Spatial Audio, Wind Block, EQ, Sidetone, Multipoint, Auto Play/Pause, Auto Answer) no longer trigger a full device re-read — response is immediate
+- Fixed: Bluetooth socket was leaked when the initial state fetch failed right after connecting
+- Fixed: Listening Mode list no longer flickers/rebuilds on every 15 s background poll when modes haven't changed
+- Removed dead code: ButtonConfig class and button-address constant (button remapping requires Bose cloud auth)
 - Added app icon for F-Droid store listing
-- Code comment cleanup

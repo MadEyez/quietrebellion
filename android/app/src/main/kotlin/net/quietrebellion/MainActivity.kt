@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
     // ── Cached state ──────────────────────────────────────────────────────────
     private var modeNames: Map<Int, String> = QcUltra2.MODE_NAMES
     private var currentModeIndex = -1
-    private var audioSettings    = AudioSettings(0, true, SpatialMode.Off, false, false)
+    private var audioSettings    = AudioSettings(0, SpatialMode.Off, false, false)
     private var eqBands          = listOf<EqBand>()
     private var sidetone         = 0
     private var multipoint       = false
@@ -88,6 +88,10 @@ class MainActivity : AppCompatActivity() {
     private var activeMac: String? = null
     private var autoPlayPause     = false
     private var autoAnswer        = false
+
+    // populateModes: skip rebuild when modes+favorites haven't changed
+    private var lastModeNamesForRadio: Map<Int, String> = emptyMap()
+    private var lastFavoritesForRadio: Set<Int>         = emptySet()
 
     // Guards against re-entrant UI updates triggering command sends
     private var updatingUi = false
@@ -331,22 +335,24 @@ class MainActivity : AppCompatActivity() {
     @android.annotation.SuppressLint("MissingPermission")
     private fun connectTo(device: android.bluetooth.BluetoothDevice) {
         lifecycleScope.launch {
+            setStatus(getString(R.string.str_connecting_to, device.name))
+            boseService?.detach()
+            val connection = try {
+                BoseConnection(BluetoothTransport.connectDirect(device))
+            } catch (e: Exception) {
+                Log.e("BoseCtl", "Connect failed: ${e::class.simpleName}: ${e.message}", e)
+                setStatus(getString(R.string.str_error_msg, e.message ?: "")); return@launch
+            }
             try {
-                setStatus(getString(R.string.str_connecting_to, device.name))
-                boseService?.detach()
-
-                val transport = BluetoothTransport.connectDirect(device)
-                val connection = BoseConnection(transport)
                 Log.d("BoseCtl", "Socket connected to ${device.name}")
-
                 getSharedPreferences("prefs", MODE_PRIVATE).edit()
                     .putString("last_mac", device.address).apply()
-
-
                 b.tvDeviceName.text = device.name
                 fetchAndRefresh(connection, device.name)
             } catch (e: Exception) {
-                Log.e("BoseCtl", "Connection failed: ${e::class.simpleName}: ${e.message}", e)
+                // service never adopted the connection → close it to avoid socket leak
+                connection.close()
+                Log.e("BoseCtl", "Initial fetch failed: ${e::class.simpleName}: ${e.message}", e)
                 setStatus(getString(R.string.str_error_msg, e.message ?: ""))
             }
         }
@@ -417,6 +423,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun populateModes() {
+        if (modeNames == lastModeNamesForRadio && favorites == lastFavoritesForRadio) {
+            // Only update checked state – avoids RadioGroup flicker on every poll
+            for (i in 0 until b.rgModes.childCount) {
+                val rb = b.rgModes.getChildAt(i) as? RadioButton ?: continue
+                rb.isChecked = (rb.tag as? Int) == currentModeIndex
+            }
+            return
+        }
+        lastModeNamesForRadio = modeNames
+        lastFavoritesForRadio = favorites
         b.rgModes.removeAllViews()
         modeNames.entries.sortedBy { it.key }
             .filter { (_, name) -> name.lowercase() != "none" }
@@ -441,14 +457,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyCnc() {
-        val auto = audioSettings.autoCnc
         // UI is inverted: slider 10 = max ANC, device stores 0 = max ANC
         val uiVal = 10 - audioSettings.cncLevel
         b.sbCnc.progress = uiVal
         b.tvCncLevel.text = getString(R.string.str_anc_level, uiVal)
-        b.swAutoCnc.isChecked = auto
-        b.layoutManualCnc.visibility = if (auto) View.GONE else View.VISIBLE
-        b.tvAutoCncStatus.visibility = if (auto) View.VISIBLE else View.GONE
     }
 
     private fun applySpatial() {
@@ -542,6 +554,15 @@ class MainActivity : AppCompatActivity() {
             sendCmd {
                 conn!!.setModeByIndex(idx)
                 currentModeIndex = idx
+                // Eagerly read audio settings so CNC, Spatial and Wind Block update in ~200 ms
+                // instead of waiting for the full 14-GET fetchAndRefresh (~3 s).
+                // updatingUi guard prevents the UI listeners from re-firing during the update.
+                try {
+                    audioSettings = conn!!.audioSettings()
+                    updatingUi = true
+                    try { applyCnc(); applySpatial(); b.swWindBlock.isChecked = audioSettings.windBlock }
+                    finally { updatingUi = false }
+                } catch (_: Exception) {}
             }
         }
 
@@ -566,21 +587,12 @@ class MainActivity : AppCompatActivity() {
                 b.rbSpatialHead.id -> SpatialMode.Head
                 else               -> SpatialMode.Off
             }
-            sendCmd { conn!!.setSpatial(mode); audioSettings = audioSettings.copy(spatial = mode) }
+            sendCmdFast { conn!!.setSpatial(mode); audioSettings = audioSettings.copy(spatial = mode) }
         }
 
         b.swWindBlock.setOnCheckedChangeListener { _, checked ->
             if (updatingUi) return@setOnCheckedChangeListener
-            sendCmd { conn!!.setWindBlock(checked); audioSettings = audioSettings.copy(windBlock = checked) }
-        }
-
-        b.swAutoCnc.setOnCheckedChangeListener { _, checked ->
-            if (updatingUi) return@setOnCheckedChangeListener
-            sendCmd {
-                val s = audioSettings.copy(autoCnc = checked)
-                conn!!.writeAudioSettings(s)
-                audioSettings = s
-            }
+            sendCmdFast { conn!!.setWindBlock(checked); audioSettings = audioSettings.copy(windBlock = checked) }
         }
 
         b.eqCurveView.onBandChanged = { bandId, value ->
@@ -588,7 +600,7 @@ class MainActivity : AppCompatActivity() {
             tv.text  = "%+d".format(value)
         }
         b.eqCurveView.onBandReleased = { bandId, value ->
-            sendCmd { conn!!.setEqBand(bandId, value) }
+            sendCmdFast { conn!!.setEqBand(bandId, value) }
             eqBands = eqBands.map { if (it.bandId == bandId) it.copy(current = value) else it }
         }
 
@@ -600,12 +612,12 @@ class MainActivity : AppCompatActivity() {
                 b.rbSidetoneLow.id    -> 3
                 else                  -> 0
             }
-            sendCmd { conn!!.setSidetone(level); sidetone = level }
+            sendCmdFast { conn!!.setSidetone(level); sidetone = level }
         }
 
         b.swMultipoint.setOnCheckedChangeListener { _, checked ->
             if (updatingUi) return@setOnCheckedChangeListener
-            sendCmd {
+            sendCmdFast {
                 conn!!.setMultipoint(checked)
                 multipoint = checked
                 applyPairedDevices()
@@ -638,11 +650,11 @@ class MainActivity : AppCompatActivity() {
         // Auto Play/Pause + Auto Answer
         b.swAutoPlayPause.setOnCheckedChangeListener { _, checked ->
             if (updatingUi) return@setOnCheckedChangeListener
-            sendCmd { conn!!.setAutoPlayPause(checked); autoPlayPause = checked }
+            sendCmdFast { conn!!.setAutoPlayPause(checked); autoPlayPause = checked }
         }
         b.swAutoAnswer.setOnCheckedChangeListener { _, checked ->
             if (updatingUi) return@setOnCheckedChangeListener
-            sendCmd { conn!!.setAutoAnswer(checked); autoAnswer = checked }
+            sendCmdFast { conn!!.setAutoAnswer(checked); autoAnswer = checked }
         }
 
         // Pairing mode
@@ -668,6 +680,20 @@ class MainActivity : AppCompatActivity() {
                 block()
                 fetchAndRefresh()
             } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, e.message ?: "Error", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
+     * Fire-and-forget command for pure-toggle ops where local state is updated optimistically.
+     * Skips the full 13-GET fetchAndRefresh; saves ~2 s per interaction.
+     * No server-side confirmation – error only visible via Toast on failure.
+     */
+    private fun sendCmdFast(block: suspend () -> Unit) {
+        if (conn == null) { Toast.makeText(this, getString(R.string.notif_title_disconnected), Toast.LENGTH_SHORT).show(); return }
+        lifecycleScope.launch {
+            try { block() } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, e.message ?: "Error", Toast.LENGTH_SHORT).show()
             }
         }

@@ -9,17 +9,10 @@ import java.util.UUID
 
 enum class SpatialMode(val byte: Byte) { Off(0), Room(1), Head(2) }
 
-
-data class ButtonConfig(
-    val buttonId: Int,
-    val eventId: Int,
-    val actionId: Int,
-    val supportedActions: Set<Int>,  // decoded from 4-byte bitmask in response
-)
+// ButtonConfig removed — [1.9] remapping requires cloud ECDH auth (SETGET echoes but is ignored)
 
 data class AudioSettings(
     val cncLevel:  Int,
-    val autoCnc:   Boolean,
     val spatial:   SpatialMode,
     val windBlock: Boolean,
     val ancToggle: Boolean,
@@ -52,9 +45,9 @@ object QcUltra2 {
     val ModeConfigStatus = 31.toByte() to 6.toByte()
     val AudioSettings = 31.toByte() to 10.toByte() // GET/SETGET 5-byte audio config
     val Favorites     = 31.toByte() to 8.toByte()  // GET/SETGET favorite modes bitmask
-    val Buttons       = 1.toByte()  to 9.toByte()  // GET → [bid,evt,action,bitmask4]; SETGET [bid,evt,action]
     val AutoPlayPause = 1.toByte()  to 24.toByte() // GET/SETGET [bool] auto play/pause on ear removal
     val AutoAnswer    = 1.toByte()  to 27.toByte() // GET/SETGET [bool] auto-answer calls
+    // Buttons [1.9] address removed – remapping requires cloud ECDH auth; SETGET echoes only
 
 
     val MODE_NAMES = mapOf(0 to "Quiet", 1 to "Aware", 2 to "Immersion", 3 to "Cinema")
@@ -75,19 +68,20 @@ object QcUltra2 {
         if (p.size > 1) String(p, 1, p.size - 1, Charsets.UTF_8).trimEnd('\u0000') else ""
 
     fun parseAudioSettings(p: ByteArray): AudioSettings {
-        if (p.size < 5) return AudioSettings(0, true, SpatialMode.Off, false, false)
+        if (p.size < 5) return AudioSettings(0, SpatialMode.Off, false, false)
         val spatial = SpatialMode.entries.firstOrNull { it.byte == p[2] } ?: SpatialMode.Off
+        // p[1] = autoCnc; firmware rejects autoCnc=1 with Runtime error 8 – always keep 0
         return AudioSettings(
             cncLevel  = p[0].toInt() and 0xFF,
-            autoCnc   = p[1] != 0.toByte(),
             spatial   = spatial,
             windBlock = p[3] != 0.toByte(),
             ancToggle = p[4] != 0.toByte(),
         )
     }
 
+    // autoCnc byte hardcoded to 0 – firmware rejects 1 with Runtime error 8
     fun buildAudioSettings(s: AudioSettings): ByteArray = byteArrayOf(
-        s.cncLevel.toByte(), if (s.autoCnc) 1 else 0,
+        s.cncLevel.toByte(), 0,
         s.spatial.byte, if (s.windBlock) 1 else 0, if (s.ancToggle) 1 else 0,
     )
 

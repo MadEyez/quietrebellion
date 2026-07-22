@@ -178,9 +178,8 @@
                         android:textAllCaps="true"
                         android:layout_marginBottom="8dp" />
 
-                    <!-- Manual ANC controls (hidden when Auto ANC is on) -->
+                    <!-- Manual ANC controls -->
                     <LinearLayout
-                        android:id="@+id/layoutManualCnc"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
@@ -220,45 +219,6 @@
                         </LinearLayout>
                     </LinearLayout>
 
-                    <!-- Status shown instead of slider when Auto ANC is on -->
-                    <TextView
-                        android:id="@+id/tvAutoCncStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/str_auto_anc_status"
-                        android:textAppearance="?attr/textAppearanceBodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:visibility="gone"
-                        android:layout_marginBottom="4dp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/str_auto_anc"
-                                android:textAppearance="?attr/textAppearanceBodyMedium" />
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/str_auto_anc_desc"
-                                android:textAppearance="?attr/textAppearanceBodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/swAutoCnc"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"

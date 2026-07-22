@@ -7,7 +7,6 @@ Bose QuietComfort Ultra Headphones (2nd Gen) — codename "wolverine"
 
 <b>Noise Control</b>
 - ANC level 0–10 (0 = full isolation, 10 = full awareness)
-- Auto-ANC toggle (device picks level automatically)
 - Wind Block on/off
 - Spatial Audio: Off / Room / Head
 

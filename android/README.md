@@ -12,7 +12,7 @@ and without root.
 
 ## Features
 
-- Noise control level (ANC 0–10, inverted: 10=max ANC) + Auto-ANC toggle
+- Noise control level (ANC 0–10, inverted: 10=max ANC)
 - Spatial audio (Off / Room / Head)
 - Wind Block
 - 3-band EQ (Bass / Mid / Treble)

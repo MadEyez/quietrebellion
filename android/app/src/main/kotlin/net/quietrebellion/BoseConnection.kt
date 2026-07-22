@@ -39,10 +39,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
         return QcUltra2.parseFirmware(get(fb, fn).payload)
     }
 
-    suspend fun deviceName(): String {
-        val (fb, fn) = QcUltra2.ProductName
-        return QcUltra2.parseProductName(get(fb, fn).payload)
-    }
+    // deviceName() removed – only used for rename flow which reads via tvDeviceName; re-add if a dedicated "read name" UI is needed
 
     suspend fun modeIndex(): Int {
         val (fb, fn) = QcUltra2.CurrentMode
@@ -166,9 +163,7 @@ class BoseConnection(private val transport: BluetoothTransport) : Closeable {
 
     suspend fun setCncLevel(level: Int) {
         require(level in 0..10) { "CNC level must be 0–10" }
-        // autoCnc=true lets the device manage level automatically → manual changes ignored.
-        // Force autoCnc=false so the explicit level is applied.
-        writeAudioSettings(audioSettings().copy(cncLevel = level, autoCnc = false))
+        writeAudioSettings(audioSettings().copy(cncLevel = level))
     }
 
     suspend fun setWindBlock(enabled: Boolean) =
