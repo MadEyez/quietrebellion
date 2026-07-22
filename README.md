@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Upstream](https://img.shields.io/badge/upstream-aaronsb%2Fbosectl-blue)](https://github.com/aaronsb/bosectl)
-[![Devices](https://img.shields.io/badge/Devices-2_supported_·_14_known-green)](docs/architecture.md#device-catalog)
+[![Devices](https://img.shields.io/badge/Devices-4_supported_·_38_known-green)](docs/architecture.md#device-catalog)
 [![Python 3](https://img.shields.io/badge/Python-3-3572A5.svg)](python/)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-DEA584.svg)](rust/)
 [![C++17](https://img.shields.io/badge/C++-17-f34b7d.svg)](cpp/)
@@ -43,8 +43,9 @@ connection to the headphones.
 ### Device Roadmap
 
 The library includes a [device catalog](docs/architecture.md#device-catalog)
-of all known BMAP-capable Bose products. These are recognized by Bluetooth
-product ID but don't have tested configurations yet — contributions welcome:
+of all known BMAP-capable Bose products (38 total, 34 without a tested
+configuration yet). These are recognized by Bluetooth product ID —
+contributions welcome. Selected highlights:
 
 | Device | Codename | Category | PID |
 |--------|----------|----------|-----|
@@ -57,6 +58,8 @@ product ID but don't have tested configurations yet — contributions welcome:
 | Ultra Open Earbuds | serena | Earbuds | `0x4068` |
 | SoundLink Flex | phelps | Speaker | `0xBC59` |
 | SoundLink Flex 2 | mathers | Speaker | `0xBC61` |
+
+See [`python/pybmap/catalog.py`](python/pybmap/catalog.py) for the complete list.
 
 Adding a new device is a configuration entry — no library code changes needed.
 See [Adding a New Device](docs/architecture.md#adding-a-new-device).
@@ -308,7 +311,7 @@ Full protocol reference: **[NOTES.md](NOTES.md)**
 ## Building & Releasing
 
 ```bash
-make test                       # All tests (119 Python, 59 Rust, 51 C++)
+make test                       # All tests (138 Python, 61 Rust, 53 C++)
 make artifacts                  # Build + strip + SHA256SUMS in dist/
 make release VERSION=v0.2.0     # Test → build → gh release create
 make clean                      # Remove all build artifacts

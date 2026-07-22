@@ -301,7 +301,7 @@ Bose's firmware manifest at `downloads.bose.com/lookup.xml`.
 
 ```mermaid
 graph TD
-    CAT[Device Catalog<br/>14 known BMAP devices] --> SUP[Supported<br/>config ≠ None]
+    CAT[Device Catalog<br/>38 known BMAP devices] --> SUP[Supported<br/>config ≠ None]
     CAT --> UNSUP[Recognized but Unsupported<br/>config = None]
     SUP --> DISC[Discovery<br/>PID → config lookup]
     SUP --> CFG[Device Configs<br/>qc_ultra2, qc35]

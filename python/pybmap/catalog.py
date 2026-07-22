@@ -145,7 +145,7 @@ def modalias(product_id):
         product_id: Bose product ID (int).
 
     Returns:
-        Modalias string like "bluetooth:v009Bp4082d0000", or None.
+        Modalias string like "bluetooth:v05A7p4082d0000", or None.
     """
     if product_id in CATALOG:
         return "bluetooth:v%04Xp%04Xd0000" % (BOSE_USB_VID, product_id)
